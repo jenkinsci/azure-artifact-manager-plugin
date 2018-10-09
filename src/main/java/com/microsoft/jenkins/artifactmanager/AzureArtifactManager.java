@@ -107,7 +107,8 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
         // TODO check if able to delete artifacts
 
         try {
-            deleteWithPrefix(virtualPath);
+            int count = deleteWithPrefix(virtualPath);
+            return count > 0;
         } catch (URISyntaxException | StorageException e) {
             e.printStackTrace();
         }
@@ -118,18 +119,6 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
         CloudBlobContainer container = getContainer();
         Iterable<ListBlobItem> listBlobItems = container.listBlobs(prefix);
         return deleteBlobs(listBlobItems);
-    }
-
-    private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
-        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-
-        CloudBlobContainer container = AzureUtils.getBlobContainerReference(
-                accountInfo,
-                config.getContainer(),
-                true,
-                true,
-                false);
-        return container;
     }
 
     private int deleteBlobs(Iterable<ListBlobItem> blobItems)
@@ -148,9 +137,21 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
         return count;
     }
 
+    private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
+
+        CloudBlobContainer container = AzureUtils.getBlobContainerReference(
+                accountInfo,
+                config.getContainer(),
+                true,
+                true,
+                false);
+        return container;
+    }
+
     @Override
     public VirtualFile root() {
-        return new AzureBlobVirtualFile(config.getContainer(), getVirtualPath("artifacts"),build);
+        return new AzureBlobVirtualFile(config.getContainer(), getVirtualPath("artifacts"), build);
     }
 
     @Override
@@ -255,6 +256,4 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
             e.printStackTrace();
         }
     }
-
-
 }
