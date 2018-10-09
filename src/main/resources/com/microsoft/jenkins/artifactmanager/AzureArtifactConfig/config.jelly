@@ -1,0 +1,30 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <f:section title="${%Azure Storage Credentials Settings}">
+        <f:entry title="${%Storage_Credentials}" field="storageCredentialId"
+                 help="/plugin/windows-azure-storage/help-storagecredential.html">
+            <c:select expressionAllowed="false"/>
+        </f:entry>
+    </f:section>
+
+    <f:section title="${%Azure Storage Access settings}">
+        <f:entry title="${%Azure Container Name}" field="container">
+            <f:textbox/>
+        </f:entry>
+        <f:entry title="${%Base Prefix}" field="prefix">
+            <f:textbox/>
+        </f:entry>
+        <!--<f:entry title="${%Delete Artifacts}" field="deleteArtifacts">-->
+            <!--<f:checkbox readonly="true"/>-->
+        <!--</f:entry>-->
+        <!--<f:entry title="${%Delete Stashes}" field="deleteStashes">-->
+            <!--<f:checkbox readonly="true"/>-->
+        <!--</f:entry>-->
+        <!--<f:validateButton title="Validate Azure Storage Container configuration" progress="Validate..."-->
+                          <!--method="validateS3BucketConfig"-->
+                          <!--with="container,prefix"/>-->
+        <!--<f:validateButton title="Create S3 Bucket from configuration" progress="Creating S3 Bucket..."-->
+                          <!--method="createS3Bucket"-->
+                          <!--with="container,prefix"/>-->
+    </f:section>
+</j:jelly>
