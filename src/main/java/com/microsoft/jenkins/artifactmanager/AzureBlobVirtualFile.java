@@ -7,7 +7,6 @@ import com.microsoft.azure.storage.blob.CloudBlobDirectory;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.blob.ListBlobItem;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureUtils;
 import hudson.model.Run;
 import hudson.remoting.Callable;
@@ -77,10 +76,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @CheckForNull
     @Override
     public URL toExternalURL() throws IOException {
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(build.getParent(), config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         String sasUrl;
         try {
             sasUrl = AzureUtils.generateBlobSASURL(accountInfo, this.container, this.key);
@@ -101,15 +97,12 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         Cache cache = findCache(key);
         if (cache != null) {
             LOGGER.log(Level.FINER, "cache hit on directory status of {0} / {1}", new Object[]{container, key});
-            String relSlash = key.substring(cache.root.length()); // "" or "sub/dir/"
+            String relSlash = key.substring(cache.root.length());
             return cache.children.keySet().stream().anyMatch(f -> f.startsWith(relSlash));
         }
         LOGGER.log(Level.FINE, "checking directory status {0} / {1}", new Object[]{container, key});
 
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             Iterator<ListBlobItem> iterator = blobContainerReference.listBlobs(key).iterator();
@@ -126,10 +119,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
         }
 
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(key);
@@ -151,10 +141,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         VirtualFile[] list = new VirtualFile[0];
         String keys = this.key + "/";
 
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             Iterable<ListBlobItem> blobItems = blobContainerReference.listBlobs(keys);
@@ -176,10 +163,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Override
     public long length() throws IOException {
 
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             Iterable<ListBlobItem> blobItems = blobContainerReference.listBlobs(this.key);
@@ -205,10 +189,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
     @Override
     public long lastModified() throws IOException {
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(this.key);
@@ -232,10 +213,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         if (!isFile()) {
             throw new FileNotFoundException("not a file");
         }
-        AzureArtifactConfig config = Utils.getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(null, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             CloudBlobContainer blobContainerReference = AzureUtils.getBlobContainerReference(accountInfo, instanceName, false, true, false);
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(this.key);

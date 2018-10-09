@@ -14,7 +14,6 @@ import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.blob.ListBlobItem;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureUtils;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadService;
@@ -71,10 +70,8 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
             return;
         }
         LOGGER.fine(String.format("Archiving from %s: %s", workspace, artifacts));
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(build.getParent(), config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
 
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         List<String> filepath = new ArrayList<>();
         for (Map.Entry<String, String> entry : artifacts.entrySet()) {
             filepath.add(entry.getValue());
@@ -124,9 +121,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
     }
 
     private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(build.getParent(), config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
 
         CloudBlobContainer container = AzureUtils.getBlobContainerReference(
                 accountInfo,
@@ -160,9 +155,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
 
     @Override
     public void stash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull EnvVars env, @Nonnull TaskListener listener, @CheckForNull String includes, @CheckForNull String excludes, boolean useDefaultExcludes, boolean allowEmpty) throws IOException, InterruptedException {
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(build.getParent(), config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
         FilePath remoteWorkspace = serviceData.getRemoteWorkspace();
@@ -201,9 +194,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
 
     @Override
     public void unstash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(build.getParent(), config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setContainerName(config.getContainer());
         String stashes = getVirtualPath("stashes");

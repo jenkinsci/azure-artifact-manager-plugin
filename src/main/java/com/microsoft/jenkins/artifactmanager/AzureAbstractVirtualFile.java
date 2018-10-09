@@ -42,9 +42,6 @@ public abstract class AzureAbstractVirtualFile extends VirtualFile {
         return cache.get().computeIfAbsent(instanceName, c -> new ArrayDeque<>());
     }
 
-    /**
-     * Finds a cache frame whose {@link Cache#root} is a prefix of the given {@link #key} or {@code /}-appended variant.
-     */
     protected @CheckForNull
     Cache findCache(String key) {
         return cacheFrames().stream().filter(frame -> key.startsWith(frame.root)).findFirst().orElse(null);
