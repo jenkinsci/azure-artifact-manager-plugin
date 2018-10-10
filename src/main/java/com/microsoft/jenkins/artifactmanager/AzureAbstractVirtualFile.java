@@ -1,6 +1,13 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ */
+
 package com.microsoft.jenkins.artifactmanager;
 
 import jenkins.util.VirtualFile;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.CheckForNull;
 import java.util.ArrayDeque;
@@ -9,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+@Restricted(NoExternalUse.class)
 public abstract class AzureAbstractVirtualFile extends VirtualFile {
     private static final Logger LOGGER = Logger.getLogger(AzureAbstractVirtualFile.class.getName());
 

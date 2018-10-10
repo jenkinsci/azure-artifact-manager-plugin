@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ */
+
 package com.microsoft.jenkins.artifactmanager;
 
 import com.microsoft.azure.storage.StorageException;
@@ -11,6 +16,8 @@ import com.microsoftopentechnologies.windowsazurestorage.helper.AzureUtils;
 import hudson.model.Run;
 import hudson.remoting.Callable;
 import jenkins.util.VirtualFile;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -28,6 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
 
+@Restricted(NoExternalUse.class)
 public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     private static final Logger LOGGER = Logger.getLogger(AzureBlobVirtualFile.class.getName());
     private static final String AZURE_BLOB_URL_PATTERN = "https://%s.blob.core.windows.net/%s/%s";
@@ -96,7 +104,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         String key = this.key + "/";
         Cache cache = findCache(key);
         if (cache != null) {
-            LOGGER.log(Level.FINER, "cache hit on directory status of {0} / {1}", new Object[]{container, key});
+            LOGGER.log(Level.FINE, "cache hit on directory status of {0} / {1}", new Object[]{container, key});
             String relSlash = key.substring(cache.root.length());
             return cache.children.keySet().stream().anyMatch(f -> f.startsWith(relSlash));
         }
@@ -208,10 +216,10 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Override
     public InputStream open() throws IOException {
         if (isDirectory()) {
-            throw new FileNotFoundException("a directory");
+            throw new FileNotFoundException("Cannot open it because it is a directory.");
         }
         if (!isFile()) {
-            throw new FileNotFoundException("not a file");
+            throw new FileNotFoundException("Cannot open it because it is not a file.");
         }
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
@@ -219,8 +227,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(this.key);
             return blockBlobReference.openInputStream();
         } catch (StorageException | URISyntaxException e) {
-            e.printStackTrace();
+            throw new IOException(e);
         }
-        return null;
     }
 }

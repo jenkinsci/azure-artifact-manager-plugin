@@ -35,6 +35,8 @@ import hudson.util.io.ArchiverFactory;
 import jenkins.model.ArtifactManager;
 import jenkins.util.VirtualFile;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -46,7 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class AzureArtifactManager extends ArtifactManager implements StashManager.StashAwareArtifactManager {
+@Restricted(NoExternalUse.class)
+public final class AzureArtifactManager extends ArtifactManager implements StashManager.StashAwareArtifactManager {
     private static final Logger LOGGER = Logger.getLogger(ArtifactManager.class.getName());
     private Run<?, ?> build;
     private AzureArtifactConfig config;
@@ -65,11 +68,12 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
     }
 
     @Override
-    public void archive(FilePath workspace, Launcher launcher, BuildListener listener, Map<String, String> artifacts) throws IOException, InterruptedException {
+    public void archive(FilePath workspace, Launcher launcher, BuildListener listener, Map<String, String> artifacts)
+            throws IOException, InterruptedException {
         if (artifacts.isEmpty()) {
             return;
         }
-        LOGGER.fine(String.format("Archiving from %s: %s", workspace, artifacts));
+        LOGGER.fine(Messages.AzureArtifactManager_archive(workspace, artifacts));
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         List<String> filepath = new ArrayList<>();
@@ -167,9 +171,9 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
                     new DirScanner.Glob(Util.fixEmpty(includes) == null ? "**" : includes,
                             excludeFilesAndStash(excludes, stashTempFile.getName()), useDefaultExcludes));
             if (count == 0 && !allowEmpty) {
-                throw new AbortException("No files included in stash");
+                throw new AbortException(Messages.AzureArtifactManager_stash_no_file());
             }
-            listener.getLogger().printf("Stashed %d file(s) to %s%n", count, null);
+            listener.getLogger().println(Messages.AzureArtifactManager_stash_files(count, null));
 
             serviceData.setVirtualPath(getVirtualPath("stashes"));
             serviceData.setContainerName(config.getContainer());
@@ -184,7 +188,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
             }
         } finally {
             stashTempFile.delete();
-            listener.getLogger().println(String.format("Deleting stash file %s", stashTempFile.getName()));
+            listener.getLogger().println(Messages.AzureArtifactManager_stash_delete(stashTempFile.getName()));
         }
     }
 
@@ -211,12 +215,13 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
 
         FilePath[] stashList = workspace.list(name + ".tgz");
         if (stashList.length == 0) {
-            throw new AbortException(String.format("No such saved stash ‘%s’ found at %s/%s", name, config.getContainer(), getVirtualPath("stashes")));
+            throw new AbortException(Messages.AzureArtifactManager_unstash_not_found(name,
+                    config.getContainer(), getVirtualPath("stashes")));
         }
 
         FilePath stashFile = stashList[0];
         workspace.untarFrom(stashFile.read(), FilePath.TarCompression.GZIP);
-        listener.getLogger().printf("Unstashed file(s) from %s", stashFile.getName());
+        listener.getLogger().println(Messages.AzureArtifactManager_unstash_files(stashFile.getName()));
     }
 
     @Override
@@ -226,6 +231,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
 
         try {
             int count = deleteWithPrefix(virtualPath);
+            listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, ""));
         } catch (URISyntaxException | StorageException e) {
             e.printStackTrace();
         }
@@ -235,7 +241,7 @@ public class AzureArtifactManager extends ArtifactManager implements StashManage
     public void copyAllArtifactsAndStashes(@Nonnull Run<?, ?> to, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         ArtifactManager artifactManager = to.pickArtifactManager();
         if (!(artifactManager instanceof AzureArtifactManager)) {
-            throw new AbortException("");
+            throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass().getName()));
         }
 
         AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;

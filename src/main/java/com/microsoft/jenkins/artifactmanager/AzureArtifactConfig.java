@@ -11,7 +11,6 @@ import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
-import hudson.model.AbstractDescribableImpl;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Item;

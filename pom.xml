@@ -23,6 +23,7 @@
         <azure-commons.version>0.2.7</azure-commons.version>
         <jackson.version>2.9.4</jackson.version>
         <springframework.version>4.1.9.RELEASE</springframework.version>
+        <useBeta>true</useBeta>
     </properties>
 
     <licenses>
@@ -138,6 +139,12 @@
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-storage</artifactId>
             <version>6.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci</groupId>
+            <artifactId>annotation-indexer</artifactId>
+            <version>1.12</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
