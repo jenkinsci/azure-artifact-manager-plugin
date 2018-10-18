@@ -14,7 +14,6 @@ import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.blob.ListBlobItem;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureUtils;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadService;
 import com.microsoftopentechnologies.windowsazurestorage.service.UploadService;
@@ -83,7 +82,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         String filespath = String.join(",", filepath);
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
-        serviceData.setVirtualPath(getVirtualPath("artifacts"));
+        serviceData.setVirtualPath(getVirtualPath("artifacts/"));
         serviceData.setContainerName(config.getContainer());
         serviceData.setFilePath(filespath);
         serviceData.setUploadType(UploadType.INDIVIDUAL);
@@ -131,7 +130,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         for (ListBlobItem blobItem : blobItems) {
             if (blobItem instanceof CloudBlob) {
                 ((CloudBlob) blobItem).uploadProperties(null, null,
-                        com.microsoftopentechnologies.windowsazurestorage.helper.Utils.updateUserAgent());
+                        Utils.updateUserAgent());
                 ((CloudBlob) blobItem).delete();
                 count++;
             } else if (blobItem instanceof CloudBlobDirectory) {
@@ -144,7 +143,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
 
-        CloudBlobContainer container = AzureUtils.getBlobContainerReference(
+        CloudBlobContainer container = Utils.getBlobContainerReference(
                 accountInfo,
                 config.getContainer(),
                 true,
@@ -175,7 +174,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             }
             listener.getLogger().println(Messages.AzureArtifactManager_stash_files(count, null));
 
-            serviceData.setVirtualPath(getVirtualPath("stashes"));
+            serviceData.setVirtualPath(getVirtualPath("stashes/"));
             serviceData.setContainerName(config.getContainer());
             serviceData.setFilePath(stashTempFile.getName());
             serviceData.setUploadType(UploadType.INDIVIDUAL);
@@ -202,7 +201,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setContainerName(config.getContainer());
-        String stashes = getVirtualPath("stashes");
+        String stashes = getVirtualPath("stashes/");
         serviceData.setIncludeFilesPattern(stashes + name + ".tgz");
         serviceData.setFlattenDirectories(true);
 
@@ -221,6 +220,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         FilePath stashFile = stashList[0];
         workspace.untarFrom(stashFile.read(), FilePath.TarCompression.GZIP);
+        stashFile.delete();
         listener.getLogger().println(Messages.AzureArtifactManager_unstash_files(stashFile.getName()));
     }
 
@@ -244,10 +244,10 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass().getName()));
         }
 
-        AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;
+//        AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;
         String virtualPath = getVirtualPath("");
-        String destVirtualPath = getVirtualPath(azureArtifactManager.key, "");
-        int count = 0;
+//        String destVirtualPath = getVirtualPath(azureArtifactManager.key, "");
+//        int count = 0;
 
         try {
             CloudBlobContainer container = getContainer();
@@ -256,7 +256,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 URI uri = blob.getUri();
                 CloudBlockBlob blockBlobReference = container.getBlockBlobReference("");
                 blockBlobReference.startCopy(uri);
-                count++;
+//                count++;
             }
         } catch (StorageException | URISyntaxException e) {
             e.printStackTrace();
