@@ -14,7 +14,6 @@ import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.blob.ListBlobItem;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureUtils;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadService;
 import com.microsoftopentechnologies.windowsazurestorage.service.UploadService;
@@ -131,7 +130,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         for (ListBlobItem blobItem : blobItems) {
             if (blobItem instanceof CloudBlob) {
                 ((CloudBlob) blobItem).uploadProperties(null, null,
-                        com.microsoftopentechnologies.windowsazurestorage.helper.Utils.updateUserAgent());
+                        Utils.updateUserAgent());
                 ((CloudBlob) blobItem).delete();
                 count++;
             } else if (blobItem instanceof CloudBlobDirectory) {
@@ -144,7 +143,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
 
-        CloudBlobContainer container = AzureUtils.getBlobContainerReference(
+        CloudBlobContainer container = Utils.getBlobContainerReference(
                 accountInfo,
                 config.getContainer(),
                 true,
