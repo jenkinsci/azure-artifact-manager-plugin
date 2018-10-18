@@ -14,17 +14,5 @@
         <f:entry title="${%Base Prefix}" field="prefix">
             <f:textbox/>
         </f:entry>
-        <!--<f:entry title="${%Delete Artifacts}" field="deleteArtifacts">-->
-            <!--<f:checkbox readonly="true"/>-->
-        <!--</f:entry>-->
-        <!--<f:entry title="${%Delete Stashes}" field="deleteStashes">-->
-            <!--<f:checkbox readonly="true"/>-->
-        <!--</f:entry>-->
-        <!--<f:validateButton title="Validate Azure Storage Container configuration" progress="Validate..."-->
-                          <!--method="validateS3BucketConfig"-->
-                          <!--with="container,prefix"/>-->
-        <!--<f:validateButton title="Create S3 Bucket from configuration" progress="Creating S3 Bucket..."-->
-                          <!--method="createS3Bucket"-->
-                          <!--with="container,prefix"/>-->
     </f:section>
 </j:jelly>
