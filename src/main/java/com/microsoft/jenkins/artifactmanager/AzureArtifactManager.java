@@ -252,32 +252,26 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             int artifactsCount = copyBlobsWithPrefix("artifacts/", azureArtifactManager.key);
             int stashesCount = copyBlobsWithPrefix("stashes/", azureArtifactManager.key);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount, this.key, azureArtifactManager.key));
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (StorageException e) {
+        } catch (URISyntaxException | StorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) {
+    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) throws StorageException, URISyntaxException {
         int count = 0;
-        try {
-            for (ListBlobItem sourceBlob : sourceBlobs) {
-                if (sourceBlob instanceof CloudBlob) {
-                    URI uri = sourceBlob.getUri();
-                    String path = uri.getPath();
-                    String sourceFilePath = path.substring(this.config.getContainer().length() + 2);
-                    String destFilePath = sourceFilePath.replace(this.key, toKey);
-                    CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
-                    destBlob.startCopy(uri);
-                    count++;
-                } else if (sourceBlob instanceof CloudBlobDirectory) {
-                    count += copyBlobs(((CloudBlobDirectory) sourceBlob).listBlobs(), toKey, container);
-                }
+        for (ListBlobItem sourceBlob : sourceBlobs) {
+            if (sourceBlob instanceof CloudBlob) {
+                URI uri = sourceBlob.getUri();
+                String path = uri.getPath();
+                String sourceFilePath = path.substring(this.config.getContainer().length() + 2);
+                String destFilePath = sourceFilePath.replace(this.key, toKey);
+                CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
+                destBlob.startCopy(uri);
+                count++;
+            } else if (sourceBlob instanceof CloudBlobDirectory) {
+                count += copyBlobs(((CloudBlobDirectory) sourceBlob).listBlobs(), toKey, container);
             }
-        } catch (StorageException | URISyntaxException e) {
-            e.printStackTrace();
         }
         return count;
     }
