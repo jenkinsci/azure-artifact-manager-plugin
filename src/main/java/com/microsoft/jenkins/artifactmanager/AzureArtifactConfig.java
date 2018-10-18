@@ -71,7 +71,11 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
 
     @Override
     public Descriptor<AzureArtifactConfig> getDescriptor() {
-        return Jenkins.getInstanceOrNull().getDescriptor(getClass());
+        Jenkins instance = Jenkins.getInstanceOrNull();
+        if (instance == null) {
+            return null;
+        }
+        return instance.getDescriptor(getClass());
     }
 
     @Extension

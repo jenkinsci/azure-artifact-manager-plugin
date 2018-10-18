@@ -36,13 +36,15 @@ import java.util.stream.StreamSupport;
 
 @Restricted(NoExternalUse.class)
 public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
+    private static final long serialVersionUID = 9054620703341308471L;
+
     private static final Logger LOGGER = Logger.getLogger(AzureBlobVirtualFile.class.getName());
     private static final String AZURE_BLOB_URL_PATTERN = "https://%s.blob.core.windows.net/%s/%s";
 
     private final String container;
     private final String key;
-    private final Run<?, ?> build;
-    private transient CloudBlob blob;
+    private final transient Run<?, ?> build;
+//    private transient CloudBlob blob;
 
     public AzureBlobVirtualFile(String container, String key, Run<?, ?> build) {
         this.container = container;
