@@ -28,14 +28,11 @@ import java.util.Collections;
 
 @Extension
 public class AzureArtifactConfig implements ExtensionPoint, Serializable, Describable<AzureArtifactConfig> {
-
     private String storageCredentialId;
-
     private String container;
     private String prefix;
 
     public AzureArtifactConfig() {
-
     }
 
     @DataBoundConstructor
@@ -104,13 +101,5 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
                             Collections.emptyList()));
             return m;
         }
-
-        /**
-         * @return true if a container is configured.
-         */
-//        public boolean isConfigured() {
-//            return StringUtils.isNotBlank(AzureArtifactConfig.get().getContainer());
-//        }
-
     }
 }
