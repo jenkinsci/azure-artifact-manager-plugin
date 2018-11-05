@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.TimeZone;
 
 
@@ -52,6 +53,25 @@ public class Utils {
         return config;
     }
 
+    public static boolean validateContainerName(String containerName) {
+        if (containerName != null) {
+            if (containerName.equals(Constants.ROOT_CONTAINER) || containerName.equals(Constants.WEB_CONTAINER)) {
+                return true;
+            }
+
+            String lcContainerName = containerName.trim().toLowerCase(
+                    Locale.ENGLISH);
+            if (!lcContainerName.equals(containerName)) {
+                return false;
+            }
+            if (lcContainerName.matches(Constants.VAL_CNT_NAME)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // TODO methods below should be removed after refactoring windows storage plugin's codes
     public static StorageAccountInfo getStorageAccount(Item item) {
         AzureArtifactConfig config = getArtifactConfig();
         AzureCredentials.StorageAccountCredential accountCredentials =
