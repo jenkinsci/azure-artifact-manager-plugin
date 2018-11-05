@@ -64,7 +64,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Nonnull
     @Override
     public String getName() {
-        return key.replaceFirst(".+/", "");
+        return key.replaceFirst(".+/", Constants.EMPTY_STRING);
     }
 
     @Nonnull
@@ -92,12 +92,12 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
     @Override
     public VirtualFile getParent() {
-        return new AzureBlobVirtualFile(this.container, this.key.replaceFirst("/[^/]+$", ""), this.build);
+        return new AzureBlobVirtualFile(this.container, this.key.replaceFirst("/[^/]+$", Constants.EMPTY_STRING), this.build);
     }
 
     @Override
     public boolean isDirectory() throws IOException {
-        String key = this.key + "/";
+        String key = this.key + Constants.FORWARD_SLASH;
         LOGGER.log(Level.FINE, "checking directory status {0} / {1}", new Object[]{container, key});
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
@@ -132,7 +132,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Override
     public VirtualFile[] list() throws IOException {
         VirtualFile[] list;
-        String keys = this.key + "/";
+        String keys = this.key + Constants.FORWARD_SLASH;
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
@@ -150,7 +150,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Nonnull
     @Override
     public VirtualFile child(@Nonnull String name) {
-        return new AzureBlobVirtualFile(this.container, key + "/" + name, build);
+        return new AzureBlobVirtualFile(this.container, key + Constants.FORWARD_SLASH + name, build);
     }
 
     @Override

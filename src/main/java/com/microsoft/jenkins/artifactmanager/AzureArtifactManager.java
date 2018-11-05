@@ -63,7 +63,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     @Override
     public void onLoad(Run<?, ?> build) {
-        this.key = String.format("%s/%s", build.getParent().getFullName(), build.getNumber());
+        this.key = String.format(Constants.BUILD_PREFIX_FORMAT, build.getParent().getFullName(), build.getNumber());
     }
 
     @Override
@@ -79,10 +79,10 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         for (Map.Entry<String, String> entry : artifacts.entrySet()) {
             filePath.add(entry.getValue());
         }
-        String filesPath = String.join(",", filePath);
+        String filesPath = String.join(Constants.COMMA, filePath);
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
-        serviceData.setVirtualPath(getVirtualPath("artifacts/"));
+        serviceData.setVirtualPath(getVirtualPath(Constants.ARTIFACTS_PATH));
         serviceData.setContainerName(config.getContainer());
         serviceData.setFilePath(filesPath);
         serviceData.setUploadType(UploadType.INDIVIDUAL);
@@ -101,7 +101,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private String getVirtualPath(String key, String path) {
-        return String.format("%s%s/%s", config.getPrefix(), key, path);
+        return String.format(Constants.VIRTUAL_PATH_FORMAT, config.getPrefix(), key, path);
     }
 
     @Override
@@ -163,18 +163,18 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
         FilePath remoteWorkspace = serviceData.getRemoteWorkspace();
-        FilePath stashTempFile = remoteWorkspace.child(name + ".tgz");
+        FilePath stashTempFile = remoteWorkspace.child(name + Constants.TGZ_FILE_EXTENSION);
         try {
             int count;
             count = workspace.archive(ArchiverFactory.TARGZ, stashTempFile.write(),
-                    new DirScanner.Glob(Util.fixEmpty(includes) == null ? "**" : includes,
+                    new DirScanner.Glob(Util.fixEmpty(includes) == null ? Constants.DEFAULT_INCLUDE_PATTERN : includes,
                             excludeFilesAndStash(excludes, stashTempFile.getName()), useDefaultExcludes));
             if (count == 0 && !allowEmpty) {
                 throw new AbortException(Messages.AzureArtifactManager_stash_no_file());
             }
             listener.getLogger().println(Messages.AzureArtifactManager_stash_files(count, config.getContainer()));
 
-            serviceData.setVirtualPath(getVirtualPath("stashes/"));
+            serviceData.setVirtualPath(getVirtualPath(Constants.STASHES_PATH));
             serviceData.setContainerName(config.getContainer());
             serviceData.setFilePath(stashTempFile.getName());
             serviceData.setUploadType(UploadType.INDIVIDUAL);
@@ -194,7 +194,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     private String excludeFilesAndStash(String excludes, String stashFile) {
         List<String> strings = Lists.asList(excludes, new String[]{stashFile});
-        return String.join(",", strings);
+        return String.join(Constants.COMMA, strings);
     }
 
     @Override
@@ -202,8 +202,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setContainerName(config.getContainer());
-        String stashes = getVirtualPath("stashes/");
-        serviceData.setIncludeFilesPattern(stashes + name + ".tgz");
+        String stashes = getVirtualPath(Constants.STASHES_PATH);
+        serviceData.setIncludeFilesPattern(stashes + name + Constants.TGZ_FILE_EXTENSION);
         serviceData.setFlattenDirectories(true);
 
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
@@ -214,10 +214,10 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             throw new IOException(e);
         }
 
-        FilePath[] stashList = workspace.list(name + ".tgz");
+        FilePath[] stashList = workspace.list(name + Constants.TGZ_FILE_EXTENSION);
         if (stashList.length == 0) {
             throw new AbortException(Messages.AzureArtifactManager_unstash_not_found(name,
-                    config.getContainer(), getVirtualPath("stashes")));
+                    config.getContainer(), getVirtualPath(Constants.STASHES_PATH)));
         }
 
         FilePath stashFile = stashList[0];
@@ -228,7 +228,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     @Override
     public void clearAllStashes(@Nonnull TaskListener listener) throws IOException, InterruptedException {
-        String virtualPath = getVirtualPath("stashes/");
+        String virtualPath = getVirtualPath(Constants.STASHES_PATH);
         // TODO check
 
         try {
@@ -249,8 +249,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;
         try {
-            int artifactsCount = copyBlobsWithPrefix("artifacts/", azureArtifactManager.key);
-            int stashesCount = copyBlobsWithPrefix("stashes/", azureArtifactManager.key);
+            int artifactsCount = copyBlobsWithPrefix(Constants.ARTIFACTS_PATH, azureArtifactManager.key);
+            int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.key);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount, this.key, azureArtifactManager.key));
         } catch (URISyntaxException | StorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));

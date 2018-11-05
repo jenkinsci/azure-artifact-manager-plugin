@@ -91,7 +91,7 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
 
         @Override
         public String getDisplayName() {
-            return "Azure Storage";
+            return Constants.AZURE_STORAGE_DISPLAY_NAME;
         }
 
         public ListBoxModel doFillStorageCredentialIdItems(@AncestorInPath Item owner) {
