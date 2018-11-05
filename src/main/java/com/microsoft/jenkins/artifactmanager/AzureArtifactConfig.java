@@ -15,12 +15,14 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.security.ACL;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.Serializable;
@@ -100,6 +102,14 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
                             ACL.SYSTEM,
                             Collections.emptyList()));
             return m;
+        }
+
+        public FormValidation doCheckContainer(@QueryParameter String container) {
+            boolean isValid = Utils.validateContainerName(container);
+            if (!isValid) {
+                return FormValidation.error(Messages.AzureArtifactConfig_invalid_container_name(container));
+            }
+            return FormValidation.ok();
         }
     }
 }
