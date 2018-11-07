@@ -88,7 +88,6 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         serviceData.setFilePath(filespath);
         serviceData.setUploadType(UploadType.INDIVIDUAL);
 
-
         UploadService uploadService = new UploadToBlobService(serviceData);
         try {
             uploadService.execute();
