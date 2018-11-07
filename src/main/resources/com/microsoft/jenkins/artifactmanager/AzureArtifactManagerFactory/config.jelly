@@ -1,5 +1,4 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:dropdownDescriptorSelector field="config" title="${%Cloud provider}"/>
-
+    <f:dropdownDescriptorSelector field="config" title="${%Provider_title}"/>
 </j:jelly>
