@@ -9,7 +9,10 @@ import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInf
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
 import org.junit.ClassRule;
+import org.junit.runner.RunWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -20,8 +23,6 @@ import java.util.UUID;
  * Copy from windows-azure-storage-plugin since they use the same integration tests environment.
  */
 public class IntegrationTest {
-    @ClassRule
-    public static JenkinsRule j = new JenkinsRule();
 
     protected static class TestEnvironment {
         public final String azureStorageAccountName;
