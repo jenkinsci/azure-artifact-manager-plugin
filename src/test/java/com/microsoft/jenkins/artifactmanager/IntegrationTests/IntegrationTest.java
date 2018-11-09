@@ -3,16 +3,10 @@ package com.microsoft.jenkins.artifactmanager.IntegrationTests;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.file.CloudFileShare;
 import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsGlobalConfig;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
-import org.junit.ClassRule;
-import org.junit.runner.RunWith;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -32,14 +26,12 @@ public class IntegrationTest {
         public final String blobURL;
         public final StorageAccountInfo sampleStorageAccount;
         public static final int TOTAL_FILES = 50;
-        public HashMap<String, File> downloadFileList = new HashMap<>();
         public HashMap<String, File> uploadFileList = new HashMap<>();
         public String containerName;
         public String shareName;
         public CloudBlobContainer container;
         public CloudStorageAccount account;
         public CloudBlobClient blobClient;
-        public CloudFileShare fileShare;
 
         TestEnvironment(String name) throws URISyntaxException {
             azureStorageAccountName = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_NAME");
