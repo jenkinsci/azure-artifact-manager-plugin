@@ -22,7 +22,7 @@
         <windows-azure-storage.version>0.3.10</windows-azure-storage.version>
         <azure-commons.version>0.2.7</azure-commons.version>
         <jackson.version>2.9.5</jackson.version>
-        <springframework.version>4.3.17.RELEASE</springframework.version>
+        <springframework.version>4.3.18.RELEASE</springframework.version>
         <useBeta>true</useBeta>
         <powermock.version>1.7.1</powermock.version>
     </properties>
