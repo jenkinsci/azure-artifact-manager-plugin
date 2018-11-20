@@ -36,7 +36,7 @@ public class AzureArtifactManagerFactory extends ArtifactManagerFactory {
     @CheckForNull
     @Override
     public ArtifactManager managerFor(Run<?, ?> build) {
-        return new AzureArtifactManager(build,Utils.getArtifactConfig());
+        return new AzureArtifactManager(build, Utils.getArtifactConfig());
     }
 
     @Extension
