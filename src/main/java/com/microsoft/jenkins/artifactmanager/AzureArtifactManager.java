@@ -53,7 +53,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private Run<?, ?> build;
     private AzureArtifactConfig config;
 
-    private transient String key;
+    private transient String defaultKey;
 
     public AzureArtifactManager(Run<?, ?> build, AzureArtifactConfig config) {
         this.build = build;
@@ -62,8 +62,9 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void onLoad(Run<?, ?> build) {
-        this.key = String.format(Constants.BUILD_PREFIX_FORMAT, build.getParent().getFullName(), build.getNumber());
+    public void onLoad(Run<?, ?> aBuild) {
+        this.defaultKey = String.format(Constants.BUILD_PREFIX_FORMAT, aBuild.getParent().getFullName(),
+                aBuild.getNumber());
     }
 
     @Override
@@ -97,7 +98,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private String getVirtualPath(String path) {
-        return getVirtualPath(key, path);
+        return getVirtualPath(defaultKey, path);
     }
 
     private String getVirtualPath(String key, String path) {
@@ -158,7 +159,10 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void stash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull EnvVars env, @Nonnull TaskListener listener, @CheckForNull String includes, @CheckForNull String excludes, boolean useDefaultExcludes, boolean allowEmpty) throws IOException, InterruptedException {
+    public void stash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
+                      @Nonnull EnvVars env, @Nonnull TaskListener listener, @CheckForNull String includes,
+                      @CheckForNull String excludes, boolean useDefaultExcludes, boolean allowEmpty) throws
+            IOException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
@@ -198,7 +202,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void unstash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public void unstash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
+                        @Nonnull EnvVars env, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setContainerName(config.getContainer());
@@ -241,31 +246,34 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void copyAllArtifactsAndStashes(@Nonnull Run<?, ?> to, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public void copyAllArtifactsAndStashes(@Nonnull Run<?, ?> to, @Nonnull TaskListener listener) throws IOException {
         ArtifactManager artifactManager = to.pickArtifactManager();
         if (!(artifactManager instanceof AzureArtifactManager)) {
-            throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass().getName()));
+            throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass()
+                    .getName()));
         }
 
         AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;
         try {
-            int artifactsCount = copyBlobsWithPrefix(Constants.ARTIFACTS_PATH, azureArtifactManager.key);
-            int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.key);
-            listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount, this.key, azureArtifactManager.key));
+            int artifactsCount = copyBlobsWithPrefix(Constants.ARTIFACTS_PATH, azureArtifactManager.defaultKey);
+            int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.defaultKey);
+            listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount,
+                    this.defaultKey, azureArtifactManager.defaultKey));
         } catch (URISyntaxException | StorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) throws StorageException, URISyntaxException {
+    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) throws
+            StorageException, URISyntaxException {
         int count = 0;
         for (ListBlobItem sourceBlob : sourceBlobs) {
             if (sourceBlob instanceof CloudBlob) {
                 URI uri = sourceBlob.getUri();
                 String path = uri.getPath();
                 String sourceFilePath = path.substring(this.config.getContainer().length() + 2);
-                String destFilePath = sourceFilePath.replace(this.key, toKey);
+                String destFilePath = sourceFilePath.replace(this.defaultKey, toKey);
                 CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
                 destBlob.startCopy(uri);
                 count++;
@@ -276,7 +284,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         return count;
     }
 
-    private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException, StorageException {
+    private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException,
+            StorageException {
         CloudBlobContainer container = getContainer();
         String sourcePath = getVirtualPath(prefix);
         Iterable<ListBlobItem> sourceBlobs = container.listBlobs(sourcePath);

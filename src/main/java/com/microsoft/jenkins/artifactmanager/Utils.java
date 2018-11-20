@@ -43,12 +43,13 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 
-public class Utils {
+public final class Utils {
     public static AzureArtifactConfig getArtifactConfig() {
         ArtifactManagerConfiguration artifactManagerConfiguration = ArtifactManagerConfiguration.get();
         DescribableList<ArtifactManagerFactory, ArtifactManagerFactoryDescriptor> artifactManagerFactories =
                 artifactManagerConfiguration.getArtifactManagerFactories();
-        AzureArtifactManagerFactory azureArtifactManagerFactory = artifactManagerFactories.get(AzureArtifactManagerFactory.class);
+        AzureArtifactManagerFactory azureArtifactManagerFactory =
+                artifactManagerFactories.get(AzureArtifactManagerFactory.class);
         AzureArtifactConfig config = azureArtifactManagerFactory.getConfig();
         return config;
     }

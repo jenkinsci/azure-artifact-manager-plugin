@@ -5,7 +5,7 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
-public class Constants {
+public final class Constants {
     public static final String ARTIFACTS_PATH = "artifacts/";
     public static final String STASHES_PATH = "stashes/";
     public static final String TGZ_FILE_EXTENSION = ".tgz";
@@ -16,4 +16,7 @@ public class Constants {
     public static final String FORWARD_SLASH = "/";
     public static final String EMPTY_STRING = "";
     public static final String DEFAULT_INCLUDE_PATTERN = "**";
+
+    private Constants() {
+    }
 }

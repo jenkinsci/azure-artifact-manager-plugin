@@ -12,6 +12,4 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 @Restricted(NoExternalUse.class)
 public abstract class AzureAbstractVirtualFile extends VirtualFile {
     private static final long serialVersionUID = 232262110935432273L;
-
-    protected String storageAccountName;
 }
