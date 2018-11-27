@@ -67,8 +67,6 @@ public class ArtifactManagerIT extends IntegrationTest {
     private static final Integer BUILD_NUMBER = 1;
     private static final String STASH_NAME = "stash";
 
-    @Rule
-    JenkinsRule j = new JenkinsRule();
 
     @Before
     public void setUp() {

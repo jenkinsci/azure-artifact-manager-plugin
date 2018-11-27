@@ -7,6 +7,8 @@ import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsGlobalConfig;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
+import org.junit.Rule;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -17,6 +19,8 @@ import java.util.UUID;
  * Copy from windows-azure-storage-plugin since they use the same integration tests environment.
  */
 public class IntegrationTest {
+    @Rule
+    public JenkinsRule j = new JenkinsRule();
 
     protected static class TestEnvironment {
         public final String azureStorageAccountName;

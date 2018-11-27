@@ -112,7 +112,7 @@ public final class Utils {
         return policy;
     }
 
-    private static Date generateExpiryDate() {
+    public static Date generateExpiryDate() {
         GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.setTime(new Date());
         calendar.add(Calendar.HOUR, 1);
