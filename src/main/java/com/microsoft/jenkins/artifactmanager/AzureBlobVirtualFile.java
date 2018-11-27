@@ -6,6 +6,7 @@
 package com.microsoft.jenkins.artifactmanager;
 
 import com.microsoft.azure.storage.StorageException;
+import com.microsoft.azure.storage.blob.BlobProperties;
 import com.microsoft.azure.storage.blob.CloudBlob;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.microsoft.azure.storage.blob.CloudBlobDirectory;
@@ -26,6 +27,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,7 +38,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     private static final long serialVersionUID = 9054620703341308471L;
 
     private static final Logger LOGGER = Logger.getLogger(AzureBlobVirtualFile.class.getName());
-    private static final String AZURE_BLOB_URL_PATTERN = "https://%s.blob.core.windows.net/%s";
+    private static final String AZURE_BLOB_URL_PATTERN = "https://%s.blob.core.windows.net/%s/%s";
 
     private final String container;
     private final String key;
@@ -70,8 +72,9 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Nonnull
     @Override
     public URI toURI() {
+        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
-            return new URI(String.format(AZURE_BLOB_URL_PATTERN, container, key));
+            return new URI(String.format(AZURE_BLOB_URL_PATTERN, accountInfo.getStorageAccName(), container, key));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -81,13 +84,13 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Override
     public URL toExternalURL() throws IOException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        String sasUrl;
+        String sas;
         try {
-            sasUrl = Utils.generateBlobSASURL(accountInfo, this.container, this.key);
+            sas = Utils.generateBlobSASURL(accountInfo, this.container, this.key);
         } catch (Exception e) {
             throw new IOException(e);
         }
-        return new URL(sasUrl);
+        return new URL(toURI() + "?" + sas);
     }
 
     @Override
@@ -106,7 +109,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             CloudBlobContainer blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
                     false, true, false);
             Iterator<ListBlobItem> iterator = blobContainerReference.listBlobs(keyWithSlash).iterator();
-            return !iterator.hasNext();
+            return iterator.hasNext();
         } catch (URISyntaxException | StorageException e) {
             throw new IOException(e);
         }
@@ -119,7 +122,6 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             CloudBlobContainer blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
                     false, true, false);
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(key);
-
             return blockBlobReference.exists();
         } catch (URISyntaxException | StorageException e) {
             throw new IOException(e);
@@ -143,12 +145,21 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
                     false, true, false);
             Iterable<ListBlobItem> blobItems = blobContainerReference.listBlobs(keys);
             list = StreamSupport.stream(blobItems.spliterator(), false)
-                    .map(item -> new AzureBlobVirtualFile(this.container, item.getUri().toString(), this.build))
+                    .map(item -> new AzureBlobVirtualFile(
+                            this.container, getRelativePath(item.getUri().toString(), keys), this.build))
                     .toArray(VirtualFile[]::new);
         } catch (StorageException | URISyntaxException e) {
             throw new IOException(e);
         }
         return list;
+    }
+
+    private String getRelativePath(String uri, String parent) {
+        String substring = uri.substring(uri.indexOf(parent));
+        if (substring.endsWith(Constants.FORWARD_SLASH)) {
+            substring = substring.substring(0, substring.length() - 1);
+        }
+        return substring;
     }
 
     @Nonnull
@@ -191,7 +202,9 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             CloudBlobContainer blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
                     false, true, false);
             CloudBlockBlob blockBlobReference = blobContainerReference.getBlockBlobReference(this.key);
-            return blockBlobReference.getProperties().getLastModified().getTime();
+            BlobProperties properties = blockBlobReference.getProperties();
+            Date lastModified = properties.getLastModified();
+            return lastModified == null ? 0 : lastModified.getTime();
         } catch (StorageException | URISyntaxException e) {
             throw new IOException(e);
         }
