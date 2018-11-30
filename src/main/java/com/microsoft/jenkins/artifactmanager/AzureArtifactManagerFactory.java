@@ -41,11 +41,10 @@ public class AzureArtifactManagerFactory extends ArtifactManagerFactory {
 
     @Extension
     public static final class DescriptorImpl extends ArtifactManagerFactoryDescriptor {
-
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Cloud Artifact Storage";
+            return "Azure Artifact Storage";
         }
     }
 
