@@ -21,7 +21,7 @@
         <workflow-api-plugin.version>2.29</workflow-api-plugin.version>
         <windows-azure-storage.version>0.3.10</windows-azure-storage.version>
         <azure-commons.version>0.2.7</azure-commons.version>
-        <jackson.version>2.9.5</jackson.version>
+        <jackson.version>2.9.8</jackson.version>
         <springframework.version>4.3.18.RELEASE</springframework.version>
         <useBeta>true</useBeta>
         <powermock.version>1.7.1</powermock.version>
@@ -41,7 +41,6 @@
             <email>vscjenkins@microsoft.com</email>
         </developer>
     </developers>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -64,8 +63,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
@@ -78,7 +75,6 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
