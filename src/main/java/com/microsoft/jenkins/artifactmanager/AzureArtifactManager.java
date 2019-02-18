@@ -12,6 +12,7 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.microsoft.azure.storage.blob.CloudBlobDirectory;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.blob.ListBlobItem;
+import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsUtils;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
@@ -91,8 +92,15 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         UploadService uploadService = new UploadToBlobService(serviceData);
         try {
             uploadService.execute();
+            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE,
+                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
+                    "FileCount", String.valueOf(artifacts.size()));
         } catch (WAStorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_archive_fail(e));
+            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE_FAILED,
+                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
+                    "FileCount", String.valueOf(artifacts.size()),
+                    "Message", e.getMessage());
             throw new IOException(e);
         }
     }
@@ -186,8 +194,15 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             UploadService uploadService = new UploadToBlobService(serviceData);
             try {
                 uploadService.execute();
+                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH,
+                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
+                        "FileCount", String.valueOf(count));
             } catch (WAStorageException e) {
                 listener.getLogger().println(Messages.AzureArtifactManager_stash_fail(e));
+                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH_FAILED,
+                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
+                        "FileCount", String.valueOf(count),
+                        "Message", e.getMessage());
                 throw new IOException(e);
             }
         } finally {
@@ -214,8 +229,13 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
         try {
             downloadService.execute();
+            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH,
+                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()));
         } catch (WAStorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_unstash_fail(e));
+            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH_FAILED,
+                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
+                    "Message", e.getMessage());
             throw new IOException(e);
         }
 
