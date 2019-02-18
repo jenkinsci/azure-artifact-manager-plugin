@@ -30,6 +30,7 @@ import java.util.Collections;
 
 @Extension
 public class AzureArtifactConfig implements ExtensionPoint, Serializable, Describable<AzureArtifactConfig> {
+    private static final long serialVersionUID = -3283542207832596121L;
     private String storageCredentialId;
     private String container;
     private String prefix;

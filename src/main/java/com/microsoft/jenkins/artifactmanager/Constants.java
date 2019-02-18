@@ -17,6 +17,14 @@ public final class Constants {
     public static final String EMPTY_STRING = "";
     public static final String DEFAULT_INCLUDE_PATTERN = "**";
 
+    public static final String AI_ARTIFACT_MANAGER = "ArtifactManager";
+    public static final String AI_ARCHIVE = "archive";
+    public static final String AI_ARCHIVE_FAILED = "archiveFailed";
+    public static final String AI_STASH = "stash";
+    public static final String AI_STASH_FAILED = "stashFailed";
+    public static final String AI_UNSTASH = "unstash";
+    public static final String AI_UNSTASH_FAILED = "unstashFailed";
+
     private Constants() {
     }
 }
