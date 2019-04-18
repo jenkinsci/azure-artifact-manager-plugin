@@ -72,6 +72,13 @@ public final class Utils {
         return false;
     }
 
+    public static boolean containTokens(String text) {
+        if (StringUtils.isBlank(text)) {
+            return false;
+        }
+        return text.matches(Constants.TOKEN_FORMAT);
+    }
+
     // TODO methods below should be removed after refactoring windows storage plugin's codes
     public static StorageAccountInfo getStorageAccount(Item item) {
         AzureArtifactConfig config = getArtifactConfig();

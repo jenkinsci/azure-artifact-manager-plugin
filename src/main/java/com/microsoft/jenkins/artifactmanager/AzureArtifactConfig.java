@@ -106,7 +106,7 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
         }
 
         public FormValidation doCheckContainer(@QueryParameter String container) {
-            boolean isValid = Utils.validateContainerName(container);
+            boolean isValid = Utils.containTokens(container) || Utils.validateContainerName(container);
             if (!isValid) {
                 return FormValidation.error(Messages.AzureArtifactConfig_invalid_container_name(container));
             }
