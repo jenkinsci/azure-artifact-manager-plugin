@@ -21,6 +21,7 @@ import com.microsoft.azure.storage.core.BaseRequest;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Constants;
+import hudson.Util;
 import hudson.model.Item;
 import hudson.util.DescribableList;
 import jenkins.model.ArtifactManagerConfiguration;
@@ -40,6 +41,7 @@ import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 
@@ -70,6 +72,21 @@ public final class Utils {
             }
         }
         return false;
+    }
+
+    public static boolean containTokens(String text) {
+        if (StringUtils.isBlank(text)) {
+            return false;
+        }
+        return text.matches(Constants.TOKEN_FORMAT);
+    }
+
+    public static String replaceMacro(String s, Map<String, String> props, Locale locale) {
+        String result = Util.replaceMacro(s, props);
+        if (result == null) {
+            return null;
+        }
+        return result.trim().toLowerCase(locale);
     }
 
     // TODO methods below should be removed after refactoring windows storage plugin's codes

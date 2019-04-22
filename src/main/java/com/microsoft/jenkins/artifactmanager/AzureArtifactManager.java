@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -53,6 +54,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private static final Logger LOGGER = Logger.getLogger(ArtifactManager.class.getName());
     private Run<?, ?> build;
     private AzureArtifactConfig config;
+    private String actualContainerName;
 
     private transient String defaultKey;
 
@@ -85,7 +87,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setVirtualPath(getVirtualPath(Constants.ARTIFACTS_PATH));
-        serviceData.setContainerName(config.getContainer());
+        serviceData.setContainerName(getActualContainerName(listener));
         serviceData.setFilePath(filesPath);
         serviceData.setUploadType(UploadType.INDIVIDUAL);
 
@@ -103,6 +105,12 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                     "Message", e.getMessage());
             throw new IOException(e);
         }
+    }
+
+    private String getActualContainerName(TaskListener listener) throws IOException, InterruptedException {
+        EnvVars envVars = build.getEnvironment(listener);
+        this.actualContainerName = Utils.replaceMacro(Util.fixNull(config.getContainer()), envVars, Locale.ENGLISH);
+        return this.actualContainerName;
     }
 
     private String getVirtualPath(String path) {
@@ -154,7 +162,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         CloudBlobContainer container = Utils.getBlobContainerReference(
                 accountInfo,
-                config.getContainer(),
+                this.actualContainerName,
                 true,
                 true,
                 false);
@@ -163,7 +171,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     @Override
     public VirtualFile root() {
-        return new AzureBlobVirtualFile(config.getContainer(), getVirtualPath("artifacts"), build);
+        return new AzureBlobVirtualFile(this.actualContainerName, getVirtualPath("artifacts"), build);
     }
 
     @Override
@@ -184,10 +192,10 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             if (count == 0 && !allowEmpty) {
                 throw new AbortException(Messages.AzureArtifactManager_stash_no_file());
             }
-            listener.getLogger().println(Messages.AzureArtifactManager_stash_files(count, config.getContainer()));
+            listener.getLogger().println(Messages.AzureArtifactManager_stash_files(count, this.actualContainerName));
 
             serviceData.setVirtualPath(getVirtualPath(Constants.STASHES_PATH));
-            serviceData.setContainerName(config.getContainer());
+            serviceData.setContainerName(getActualContainerName(listener));
             serviceData.setFilePath(stashTempFile.getName());
             serviceData.setUploadType(UploadType.INDIVIDUAL);
 
@@ -221,7 +229,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                         @Nonnull EnvVars env, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
-        serviceData.setContainerName(config.getContainer());
+        serviceData.setContainerName(getActualContainerName(listener));
         String stashes = getVirtualPath(Constants.STASHES_PATH);
         serviceData.setIncludeFilesPattern(stashes + name + Constants.TGZ_FILE_EXTENSION);
         serviceData.setFlattenDirectories(true);
@@ -242,7 +250,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         FilePath[] stashList = workspace.list(name + Constants.TGZ_FILE_EXTENSION);
         if (stashList.length == 0) {
             throw new AbortException(Messages.AzureArtifactManager_unstash_not_found(name,
-                    config.getContainer(), getVirtualPath(Constants.STASHES_PATH)));
+                    this.actualContainerName, getVirtualPath(Constants.STASHES_PATH)));
         }
 
         FilePath stashFile = stashList[0];
@@ -258,7 +266,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         try {
             int count = deleteWithPrefix(virtualPath);
-            listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, config.getContainer()));
+            listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, this.actualContainerName));
         } catch (URISyntaxException | StorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_clear_stash_fail(e));
             throw new IOException(e);
@@ -292,7 +300,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             if (sourceBlob instanceof CloudBlob) {
                 URI uri = sourceBlob.getUri();
                 String path = uri.getPath();
-                String sourceFilePath = path.substring(this.config.getContainer().length() + 2);
+                String sourceFilePath = path.substring(this.actualContainerName.length() + 2);
                 String destFilePath = sourceFilePath.replace(this.defaultKey, toKey);
                 CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
                 destBlob.startCopy(uri);
