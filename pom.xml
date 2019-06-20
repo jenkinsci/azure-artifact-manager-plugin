@@ -18,8 +18,8 @@
         <java.level>8</java.level>
         <workflow-api-plugin.version>2.29</workflow-api-plugin.version>
         <windows-azure-storage.version>0.3.13</windows-azure-storage.version>
-        <azure-commons.version>0.2.11</azure-commons.version>
-        <jackson.version>2.9.8</jackson.version>
+        <azure-commons.version>1.0.3</azure-commons.version>
+        <jackson.version>2.9.9</jackson.version>
         <springframework.version>4.3.18.RELEASE</springframework.version>
         <useBeta>true</useBeta>
         <powermock.version>1.7.1</powermock.version>

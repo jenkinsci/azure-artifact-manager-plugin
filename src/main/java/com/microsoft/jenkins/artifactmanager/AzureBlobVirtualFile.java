@@ -16,6 +16,7 @@ import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInf
 import hudson.model.Run;
 import hudson.remoting.Callable;
 import jenkins.util.VirtualFile;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
@@ -24,9 +25,12 @@ import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -136,6 +140,10 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Nonnull
     @Override
     public VirtualFile[] list() throws IOException {
+        if (StringUtils.isBlank(this.container)) {
+            // compatible with version before 0.1.2
+            return new VirtualFile[0];
+        }
         VirtualFile[] list;
         String keys = this.key + Constants.FORWARD_SLASH;
 
@@ -155,7 +163,13 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     }
 
     private String getRelativePath(String uri, String parent) {
-        String substring = uri.substring(uri.indexOf(parent));
+        String decodedUri = uri;
+        try {
+            decodedUri = URLDecoder.decode(uri, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            // not going to happen for utf-8
+        }
+        String substring = decodedUri.substring(decodedUri.indexOf(parent));
         if (substring.endsWith(Constants.FORWARD_SLASH)) {
             substring = substring.substring(0, substring.length() - 1);
         }
