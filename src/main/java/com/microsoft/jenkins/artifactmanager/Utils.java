@@ -44,8 +44,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-
 public final class Utils {
+    private static final String PREFIX_PATTERN = "^[a-z0-9A-Z]{1,30}/?$";
+
     public static AzureArtifactConfig getArtifactConfig() {
         ArtifactManagerConfiguration artifactManagerConfiguration = ArtifactManagerConfiguration.get();
         DescribableList<ArtifactManagerFactory, ArtifactManagerFactoryDescriptor> artifactManagerFactories =
@@ -70,6 +71,13 @@ public final class Utils {
             if (lcContainerName.matches(Constants.VAL_CNT_NAME)) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    public static boolean isPrefixValid(String prefix) {
+        if (prefix != null) {
+            return prefix.matches(PREFIX_PATTERN);
         }
         return false;
     }
