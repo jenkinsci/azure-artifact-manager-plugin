@@ -1,5 +1,11 @@
 # Azure Artifact Manager Plugin Changelog
 
+## Version 0.1.3 2019-06-21
+
+* Check for container name and prefix
+* Fix encoded URL issue
+* Make compatible with existing builds created before version 0.1.2
+
 ## Version 0.1.2 2019-04-22
 
 * Support environment variables for container name
