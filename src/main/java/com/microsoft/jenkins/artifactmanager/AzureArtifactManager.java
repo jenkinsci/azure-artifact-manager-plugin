@@ -59,9 +59,25 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private transient String defaultKey;
 
     public AzureArtifactManager(Run<?, ?> build, AzureArtifactConfig config) {
+        String containerName = config.getContainer();
+        String prefix = config.getPrefix();
+        checkConfig(containerName, prefix);
+
         this.build = build;
         this.config = config;
         onLoad(build);
+    }
+
+    private void checkConfig(String containerName, String prefix) {
+        boolean isContainerNameValid = Utils.containTokens(containerName) || Utils.validateContainerName(containerName);
+        if (!isContainerNameValid) {
+            throw new IllegalArgumentException(Messages.AzureArtifactConfig_invalid_container_name(containerName));
+        }
+
+        boolean isPrefixValid = Utils.isPrefixValid(prefix);
+        if (!isPrefixValid) {
+            throw new IllegalArgumentException(Messages.AzureArtifactConfig_invalid_prefix(prefix));
+        }
     }
 
     @Override

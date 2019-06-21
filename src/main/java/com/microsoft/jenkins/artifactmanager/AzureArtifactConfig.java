@@ -112,5 +112,13 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
             }
             return FormValidation.ok();
         }
+
+        public FormValidation doCheckPrefix(@QueryParameter String prefix) {
+            boolean isValid = Utils.isPrefixValid(prefix);
+            if (!isValid) {
+                return FormValidation.error(Messages.AzureArtifactConfig_invalid_prefix(prefix));
+            }
+            return FormValidation.ok();
+        }
     }
 }
