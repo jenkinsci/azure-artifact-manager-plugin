@@ -7,7 +7,7 @@ package com.microsoft.jenkins.artifactmanager;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
+import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
@@ -98,7 +98,7 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
         public ListBoxModel doFillStorageCredentialIdItems(@AncestorInPath Item owner) {
             ListBoxModel m = new StandardListBoxModel().withAll(
                     CredentialsProvider.lookupCredentials(
-                            AzureCredentials.class,
+                            AzureStorageAccount.class,
                             owner,
                             ACL.SYSTEM,
                             Collections.emptyList()));

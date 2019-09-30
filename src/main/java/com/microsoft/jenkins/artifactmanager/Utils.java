@@ -19,7 +19,7 @@ import com.microsoft.azure.storage.blob.SharedAccessBlobPermissions;
 import com.microsoft.azure.storage.blob.SharedAccessBlobPolicy;
 import com.microsoft.azure.storage.core.BaseRequest;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
+import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Constants;
 import hudson.Util;
 import hudson.model.Item;
@@ -100,9 +100,9 @@ public final class Utils {
     // TODO methods below should be removed after refactoring windows storage plugin's codes
     public static StorageAccountInfo getStorageAccount(Item item) {
         AzureArtifactConfig config = getArtifactConfig();
-        AzureCredentials.StorageAccountCredential accountCredentials =
-                AzureCredentials.getStorageAccountCredential(item, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureCredentials.convertToStorageAccountInfo(accountCredentials);
+        AzureStorageAccount.StorageAccountCredential accountCredentials =
+                AzureStorageAccount.getStorageAccountCredential(item, config.getStorageCredentialId());
+        StorageAccountInfo accountInfo = AzureStorageAccount.convertToStorageAccountInfo(accountCredentials);
         return accountInfo;
     }
 
@@ -208,7 +208,7 @@ public final class Utils {
                 storageAccount.getStorageAccountKey());
 
         if (StringUtils.isBlank(blobURLStr) || blobURLStr.equalsIgnoreCase(Constants.DEF_BLOB_URL)) {
-            cloudStorageAccount = new CloudStorageAccount(credentials);
+            cloudStorageAccount = new CloudStorageAccount(credentials, true, null);
         } else {
             final URL blobURL = new URL(blobURLStr);
             boolean useHttps = blobURL.getProtocol().equalsIgnoreCase("https");

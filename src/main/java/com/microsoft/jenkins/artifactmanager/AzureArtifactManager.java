@@ -31,9 +31,11 @@ import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.DirScanner;
+import hudson.util.LogTaskListener;
 import hudson.util.io.ArchiverFactory;
 import jenkins.model.ArtifactManager;
 import jenkins.util.VirtualFile;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -47,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
@@ -151,7 +154,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         }
     }
 
-    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException, StorageException {
+    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException,
+            StorageException, InterruptedException {
         CloudBlobContainer container = getContainer();
         Iterable<ListBlobItem> listBlobItems = container.listBlobs(prefix);
         return deleteBlobs(listBlobItems);
@@ -173,8 +177,12 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         return count;
     }
 
-    private CloudBlobContainer getContainer() throws StorageException, IOException, URISyntaxException {
+    private CloudBlobContainer getContainer() throws StorageException, IOException,
+            URISyntaxException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
+        if (StringUtils.isEmpty(this.actualContainerName)) {
+            this.actualContainerName = getActualContainerName(new LogTaskListener(LOGGER, Level.INFO));
+        }
 
         CloudBlobContainer container = Utils.getBlobContainerReference(
                 accountInfo,
@@ -303,7 +311,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.defaultKey);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount,
                     this.defaultKey, azureArtifactManager.defaultKey));
-        } catch (URISyntaxException | StorageException e) {
+        } catch (URISyntaxException | StorageException | InterruptedException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
@@ -329,7 +337,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException,
-            StorageException {
+            StorageException, InterruptedException {
         CloudBlobContainer container = getContainer();
         String sourcePath = getVirtualPath(prefix);
         Iterable<ListBlobItem> sourceBlobs = container.listBlobs(sourcePath);
