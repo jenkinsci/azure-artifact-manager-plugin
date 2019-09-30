@@ -1,5 +1,9 @@
 # Azure Artifact Manager Plugin Changelog
 
+## Version 0.1.4 2019-09-30
+
+* Bump Windows azure storage plugin 1.1.1
+
 ## Version 0.1.3 2019-06-21
 
 * Check for container name and prefix
