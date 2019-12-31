@@ -78,7 +78,9 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     public URI toURI() {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
-            return new URI(String.format(AZURE_BLOB_URL_PATTERN, accountInfo.getStorageAccName(), container, key));
+            String encodedKey = StringUtils.replace(this.key, "%", "%25");
+            return new URI(String.format(AZURE_BLOB_URL_PATTERN, accountInfo.getStorageAccName(),
+                    container, encodedKey));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
