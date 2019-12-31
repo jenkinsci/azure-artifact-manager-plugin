@@ -1,5 +1,9 @@
 # Azure Artifact Manager Plugin Changelog
 
+## Version 0.1.5 2019-12-31
+
+* Fix external url error for slash in git branch
+
 ## Version 0.1.4 2019-09-30
 
 * Bump Windows azure storage plugin 1.1.1
