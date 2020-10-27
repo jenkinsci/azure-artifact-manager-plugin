@@ -1,5 +1,9 @@
 # Azure Artifact Manager Plugin Changelog
 
+## Version 0.1.6 2020-10-27
+
+* Update maintainer 
+
 ## Version 0.1.5 2019-12-31
 
 * Fix external url error for slash in git branch
