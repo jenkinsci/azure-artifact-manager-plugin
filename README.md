@@ -1,5 +1,64 @@
 # Azure Artifact Manager Plugin
 
+> ***Important***: This plugin is being retired and will be out of support as of February 29, 2024. Azure CLI is the currently recommended way to integrate Jenkins with Azure services.
+
+## Using Credentials Binding and Az CLI
+
+[Credentials Binding](https://plugins.jenkins.io/credentials-binding/) and Az CLI is the recommended way to integrate with Azure services.
+
+1. Make sure you have [Az CLI installed](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli), version 2.0.67 or higher.
+2. Create a service principal using Az CLI:
+
+    ```bash
+        az ad sp create-for-rbac
+    ```
+
+3. Make sure the [Credentials plugin](https://plugins.jenkins.io/credentials/) is installed and add a credential in Jenkins Credentials page.
+
+   Ensure that the credential kind is ***Username with password*** and enter the following items:
+    * Username - The ***accountName*** of the storage account created.
+    * Password - The ***accessKey*** of the storage account created.
+    * ID - Credential identifier such as AzureServicePrincipal
+
+   Sample Jenkinsfile (declarative pipeline)
+
+   Upload to blob
+    ```groovy
+        pipeline {
+            agent any
+
+            stages {
+                stage('Hello') {
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: 'myAzureStorage', passwordVariable: 'ACCOUNT_KEY', usernameVariable: 'ACCOUNT_NAME')]) {
+                            sh 'az storage blob upload-batch --destination <containerName> --source <yourSourceDirectory> --pattern <pattern> --account-key $ACCOUNT_KEY --account-name $ACCOUNT_NAME'
+                        }
+
+                    }
+                }
+            }
+        }
+    ```
+   Upload to file share
+    ```groovy
+        pipeline {
+            agent any
+
+            stages {
+                stage('Hello') {
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: 'myAzureStorage', passwordVariable: 'ACCOUNT_KEY', usernameVariable: 'ACCOUNT_NAME')]) {
+                            sh 'az storage file upload-batch  --destination <fileShareName> --source <yourSourceDirectory>  --pattern <pattern> --account-key $ACCOUNT_KEY --account-name $ACCOUNT_NAME'
+                        }
+
+                    }
+                }
+            }
+        }
+    ```
+
+---
+# About this plugin
 Azure Artifact Manager plugin is an Artifact Manager that allows you store your artifacts into Azure Blob Storage. Azure Artifact Manager plugin works transparently to Jenkins and your jobs, it is like the default Artifact Manager.
 
 ## Configuration
@@ -12,7 +71,7 @@ Azure Artifact Manager plugin is an Artifact Manager that allows you store your 
 
 ## Usage
 
-To use Azure Artifact Manager, you can use the artifact step to archive/unarchive, and the stash/unstash step as you usually do. 
+To use Azure Artifact Manager, you can use the artifact step to archive/unarchive, and the stash/unstash step as you usually do.
 
 ### Pipeline Job
 

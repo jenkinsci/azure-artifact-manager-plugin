@@ -1,5 +1,10 @@
 # Azure Artifact Manager Plugin Changelog
 
+## Version 0.1.7 2021-02-20
+
+* Update document
+
+
 ## Version 0.1.6 2020-10-27
 
 * Update maintainer 
