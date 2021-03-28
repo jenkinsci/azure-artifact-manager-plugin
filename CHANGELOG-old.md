@@ -1,5 +1,7 @@
 # Azure Artifact Manager Plugin Changelog
 
+See [GitHub releases](https://github.com/jenkinsci/azure-artifact-manager-plugin/releases) for all newer versions.
+
 ## Version 0.1.7 2021-02-20
 
 * Update document
