@@ -9,12 +9,13 @@
         <relativePath/>
     </parent>
     <artifactId>azure-artifact-manager</artifactId>
-    <version>0.1.8-SNAPSHOT</version>
+    <version>${changelist}</version>
     <packaging>hpi</packaging>
     <name>Azure Artifact Manager plugin</name>
     <description>A Jenkins plugin to keep artifacts and Pipeline stashes in Azure storage.</description>
 
     <properties>
+        <changelist>9999-SNAPSHOT</changelist>
         <jenkins.version>2.121.3</jenkins.version>
         <java.level>8</java.level>
         <workflow-api-plugin.version>2.29</workflow-api-plugin.version>
@@ -196,7 +197,7 @@
         <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-        <tag>HEAD</tag>
+        <tag>${scmTag}</tag>
     </scm>
 
     <repositories>
