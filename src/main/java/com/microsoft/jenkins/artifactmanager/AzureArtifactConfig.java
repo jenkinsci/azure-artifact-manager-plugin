@@ -5,13 +5,13 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import hudson.Extension;
 import hudson.ExtensionList;
-import hudson.ExtensionPoint;
-import hudson.model.Describable;
+import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.security.ACL;
@@ -29,7 +29,7 @@ import java.io.Serializable;
 import java.util.Collections;
 
 @Extension
-public class AzureArtifactConfig implements ExtensionPoint, Serializable, Describable<AzureArtifactConfig> {
+public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactConfig> implements Serializable {
     private static final long serialVersionUID = -3283542207832596121L;
     private String storageCredentialId;
     private String container;
@@ -69,15 +69,6 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
         return ExtensionList.lookupSingleton(AzureArtifactConfig.class);
     }
 
-    @Override
-    public Descriptor<AzureArtifactConfig> getDescriptor() {
-        Jenkins instance = Jenkins.getInstanceOrNull();
-        if (instance == null) {
-            return null;
-        }
-        return instance.getDescriptor(getClass());
-    }
-
     @Extension
     public static final class DescriptorImpl extends Descriptor<AzureArtifactConfig> {
         public DescriptorImpl() {
@@ -95,14 +86,28 @@ public class AzureArtifactConfig implements ExtensionPoint, Serializable, Descri
             return Constants.AZURE_STORAGE_DISPLAY_NAME;
         }
 
-        public ListBoxModel doFillStorageCredentialIdItems(@AncestorInPath Item owner) {
-            ListBoxModel m = new StandardListBoxModel().withAll(
-                    CredentialsProvider.lookupCredentials(
-                            AzureStorageAccount.class,
-                            owner,
+        public ListBoxModel doFillStorageCredentialIdItems(@AncestorInPath Item item) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            if (item == null) {
+                if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                    return result.includeCurrentValue(get().getStorageCredentialId());
+                }
+            } else {
+                if (!item.hasPermission(Item.EXTENDED_READ)
+                        && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                    return result.includeCurrentValue(get().getStorageCredentialId());
+                }
+            }
+            return result
+                    .includeEmptyValue()
+                    .includeMatchingAs(
                             ACL.SYSTEM,
-                            Collections.emptyList()));
-            return m;
+                            item,
+                            AzureStorageAccount.class,
+                            Collections.emptyList(),
+                            CredentialsMatchers.instanceOf(
+                                    AzureStorageAccount.class))
+                    .includeCurrentValue(get().getStorageCredentialId());
         }
 
         public FormValidation doCheckContainer(@QueryParameter String container) {

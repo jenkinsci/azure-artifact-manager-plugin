@@ -5,14 +5,11 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
+import com.azure.core.http.rest.PagedIterable;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.models.BlobItem;
 import com.google.common.collect.Lists;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.CloudBlob;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.blob.CloudBlobDirectory;
-import com.microsoft.azure.storage.blob.CloudBlockBlob;
-import com.microsoft.azure.storage.blob.ListBlobItem;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsUtils;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
@@ -43,7 +40,6 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,15 +109,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         UploadService uploadService = new UploadToBlobService(serviceData);
         try {
             uploadService.execute();
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "FileCount", String.valueOf(artifacts.size()));
         } catch (WAStorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_archive_fail(e));
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE_FAILED,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "FileCount", String.valueOf(artifacts.size()),
-                    "Message", e.getMessage());
             throw new IOException(e);
         }
     }
@@ -148,49 +137,39 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         try {
             int count = deleteWithPrefix(virtualPath);
             return count > 0;
-        } catch (URISyntaxException | StorageException e) {
+        } catch (URISyntaxException e) {
             LOGGER.severe(Messages.AzureArtifactManager_delete_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException,
-            StorageException, InterruptedException {
-        CloudBlobContainer container = getContainer();
-        Iterable<ListBlobItem> listBlobItems = container.listBlobs(prefix);
-        return deleteBlobs(listBlobItems);
+    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException, InterruptedException {
+        BlobContainerClient container = getContainer();
+        PagedIterable<BlobItem> listBlobItems = container.listBlobsByHierarchy(prefix);
+        return deleteBlobs(container, listBlobItems);
     }
 
-    private int deleteBlobs(Iterable<ListBlobItem> blobItems)
-            throws StorageException, URISyntaxException, IOException {
+    private int deleteBlobs(BlobContainerClient container, PagedIterable<BlobItem> blobItems) {
         int count = 0;
-        for (ListBlobItem blobItem : blobItems) {
-            if (blobItem instanceof CloudBlob) {
-                ((CloudBlob) blobItem).uploadProperties(null, null,
-                        Utils.updateUserAgent());
-                ((CloudBlob) blobItem).delete();
-                count++;
-            } else if (blobItem instanceof CloudBlobDirectory) {
-                count += deleteBlobs(((CloudBlobDirectory) blobItem).listBlobs());
-            }
+        for (BlobItem blobItem : blobItems) {
+            BlobClient blobClient = container.getBlobClient(blobItem.getName());
+            blobClient.delete();
         }
         return count;
     }
 
-    private CloudBlobContainer getContainer() throws StorageException, IOException,
+    private BlobContainerClient getContainer() throws IOException,
             URISyntaxException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         if (StringUtils.isEmpty(this.actualContainerName)) {
             this.actualContainerName = getActualContainerName(new LogTaskListener(LOGGER, Level.INFO));
         }
 
-        CloudBlobContainer container = Utils.getBlobContainerReference(
+        return Utils.getBlobContainerReference(
                 accountInfo,
                 this.actualContainerName,
-                true,
-                true,
-                false);
-        return container;
+                true
+        );
     }
 
     @Override
@@ -226,15 +205,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             UploadService uploadService = new UploadToBlobService(serviceData);
             try {
                 uploadService.execute();
-                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH,
-                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                        "FileCount", String.valueOf(count));
             } catch (WAStorageException e) {
                 listener.getLogger().println(Messages.AzureArtifactManager_stash_fail(e));
-                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH_FAILED,
-                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                        "FileCount", String.valueOf(count),
-                        "Message", e.getMessage());
                 throw new IOException(e);
             }
         } finally {
@@ -261,13 +233,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
         try {
             downloadService.execute();
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()));
         } catch (WAStorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_unstash_fail(e));
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH_FAILED,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "Message", e.getMessage());
             throw new IOException(e);
         }
 
@@ -291,7 +258,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         try {
             int count = deleteWithPrefix(virtualPath);
             listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, this.actualContainerName));
-        } catch (URISyntaxException | StorageException e) {
+        } catch (URISyntaxException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_clear_stash_fail(e));
             throw new IOException(e);
         }
@@ -311,36 +278,38 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.defaultKey);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount,
                     this.defaultKey, azureArtifactManager.defaultKey));
-        } catch (URISyntaxException | StorageException | InterruptedException e) {
+        } catch (URISyntaxException | InterruptedException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) throws
-            StorageException, URISyntaxException {
+    private int copyBlobs(PagedIterable<BlobItem> sourceBlobs, String toKey, BlobContainerClient container) {
         int count = 0;
-        for (ListBlobItem sourceBlob : sourceBlobs) {
-            if (sourceBlob instanceof CloudBlob) {
-                URI uri = sourceBlob.getUri();
-                String path = uri.getPath();
-                String sourceFilePath = path.substring(this.actualContainerName.length() + 2);
-                String destFilePath = sourceFilePath.replace(this.defaultKey, toKey);
-                CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
-                destBlob.startCopy(uri);
-                count++;
-            } else if (sourceBlob instanceof CloudBlobDirectory) {
-                count += copyBlobs(((CloudBlobDirectory) sourceBlob).listBlobs(), toKey, container);
-            }
+        for (BlobItem sourceBlob : sourceBlobs) {
+
+            // TODO figure this out
+            System.out.println(sourceBlob);
+//            if (sourceBlob instanceof CloudBlob) {
+//                URI uri = sourceBlob.getName();
+//                String path = uri.getPath();
+//                String sourceFilePath = path.substring(this.actualContainerName.length() + 2);
+//                String destFilePath = sourceFilePath.replace(this.defaultKey, toKey);
+//                BlobClient destBlob = container.getBlobClient(destFilePath);
+//                destBlob.copyFromUrl(uri);
+//                count++;
+//            } else if (sourceBlob instanceof CloudBlobDirectory) {
+//                count += copyBlobs(((CloudBlobDirectory) sourceBlob).listBlobs(), toKey, container);
+//            }
         }
         return count;
     }
 
     private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException,
-            StorageException, InterruptedException {
-        CloudBlobContainer container = getContainer();
+            InterruptedException {
+        BlobContainerClient container = getContainer();
         String sourcePath = getVirtualPath(prefix);
-        Iterable<ListBlobItem> sourceBlobs = container.listBlobs(sourcePath);
+        PagedIterable<BlobItem> sourceBlobs = container.listBlobsByHierarchy(sourcePath);
         return copyBlobs(sourceBlobs, toKey, container);
     }
 }

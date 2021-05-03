@@ -5,6 +5,8 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Run;
 import jenkins.model.ArtifactManager;
@@ -13,9 +15,6 @@ import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 
 @Restricted(NoExternalUse.class)
 public class AzureArtifactManagerFactory extends ArtifactManagerFactory {
@@ -41,7 +40,7 @@ public class AzureArtifactManagerFactory extends ArtifactManagerFactory {
 
     @Extension
     public static final class DescriptorImpl extends ArtifactManagerFactoryDescriptor {
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Azure Artifact Storage";

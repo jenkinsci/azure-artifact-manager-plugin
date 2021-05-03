@@ -1,0 +1,18 @@
+unclassified:
+  artifactManager:
+    artifactManagerFactories:
+      - azure:
+          config:
+            container: "jenkins"
+            prefix: "base/"
+            storageCredentialId: "storage"
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - azureStorageAccount:
+              blobEndpointURL: "https://blob.core.windows.net/"
+              id: "storage"
+              scope: GLOBAL
+              storageAccountName: "${AZURE_STORAGE_TEST_STORAGE_ACCOUNT_NAME}"
+              storageKey: "${AZURE_STORAGE_TEST_STORAGE_ACCOUNT_KEY1}"

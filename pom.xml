@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.40</version>
+        <version>4.18</version>
         <relativePath/>
     </parent>
     <artifactId>azure-artifact-manager</artifactId>
@@ -16,15 +16,9 @@
 
     <properties>
         <changelist>9999-SNAPSHOT</changelist>
-        <jenkins.version>2.121.3</jenkins.version>
+        <jenkins.version>2.277.2</jenkins.version>
         <java.level>8</java.level>
-        <workflow-api-plugin.version>2.29</workflow-api-plugin.version>
-        <windows-azure-storage.version>1.1.1</windows-azure-storage.version>
-        <azure-commons.version>1.0.4</azure-commons.version>
-        <jackson.version>2.10.0</jackson.version>
-        <springframework.version>5.2.2.RELEASE</springframework.version>
-        <useBeta>true</useBeta>
-        <powermock.version>1.7.1</powermock.version>
+        <windows-azure-storage.version>355.v4da08e72a251</windows-azure-storage.version>
     </properties>
 
     <licenses>
@@ -45,150 +39,59 @@
             <name>Tim Jacomb</name>
         </developer>
     </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-2.277.x</artifactId>
+                <version>29</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>azure-commons</artifactId>
-            <version>${azure-commons.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.microsoft.azure</groupId>
-                    <artifactId>azure-client-runtime</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.microsoft.azure</groupId>
-                    <artifactId>azure-client-authentication</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
             <version>${windows-azure-storage.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.microsoft.azure</groupId>
-                    <artifactId>azure-storage</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>${workflow-api-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>${workflow-api-plugin.version}</version>
             <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jenkins</groupId>
+            <artifactId>configuration-as-code</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jenkins.configuration-as-code</groupId>
+            <artifactId>test-harness</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>2.8.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>${powermock.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito2</artifactId>
-            <version>${powermock.version}</version>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.11</version>
-        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
-            <version>2.1.16</version>
-        </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>2.7</version>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-annotations</artifactId>
-            <version>1.7.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>5.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${springframework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${springframework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci</groupId>
-            <artifactId>symbol-annotation</artifactId>
-            <version>1.14</version>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-storage</artifactId>
-            <version>6.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci</groupId>
-            <artifactId>annotation-indexer</artifactId>
-            <version>1.12</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>3.14.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.reactivex</groupId>
-            <artifactId>rxjava</artifactId>
-            <version>1.3.8</version>
         </dependency>
     </dependencies>
 
@@ -216,19 +119,16 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <configuration>
-                    <pluginFirstClassLoader>true</pluginFirstClassLoader>
-                    <maskClasses>
-                        com.microsoft.azure.storage.
-                    </maskClasses>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>8.42</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>validate</id>
