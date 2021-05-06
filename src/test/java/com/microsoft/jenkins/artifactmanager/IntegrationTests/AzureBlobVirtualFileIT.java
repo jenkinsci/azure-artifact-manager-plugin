@@ -36,7 +36,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     private static final String SUB_TEMP_FILE_RELATIVE_PATH = "test/sub/sub.txt";
     private static final String SUB_TEMP_FILE_NAME = "sub.txt";
     private static final String SUB_FOLDER_NAME = "sub";
-    private static final String SUB_FOLDER_RELATIVE_PATH = "test/sub/";
+    private static final String SUB_FOLDER_RELATIVE_PATH = "test/sub";
     private static final String ROOT_FOLDER_NAME = "test";
 
     @Before

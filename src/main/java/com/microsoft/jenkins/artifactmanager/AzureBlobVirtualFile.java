@@ -24,9 +24,13 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -87,9 +91,21 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         try {
             String encodedKey = StringUtils.replace(this.key, "%", "%25");
-            return new URI(String.format(AZURE_BLOB_URL_PATTERN, accountInfo.getStorageAccName(),
-                    container, encodedKey));
-        } catch (URISyntaxException e) {
+            String formattedUrl = String.format(AZURE_BLOB_URL_PATTERN, accountInfo.getStorageAccName(),
+                    container, encodedKey);
+
+            String decodedURL = URLDecoder.decode(formattedUrl, StandardCharsets.UTF_8.name());
+            URL url = new URL(decodedURL);
+            return new URI(
+                    url.getProtocol(),
+                    url.getUserInfo(),
+                    url.getHost(),
+                    url.getPort(),
+                    url.getPath(),
+                    url.getQuery(),
+                    url.getRef()
+            );
+        } catch (URISyntaxException | MalformedURLException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -172,7 +188,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         PagedIterable<BlobItem> blobItems = blobContainerReference.listBlobsByHierarchy(keys);
         List<VirtualFile> files = new ArrayList<>();
         for (BlobItem blobItem : blobItems) {
-            files.add(new AzureBlobVirtualFile(this.container, blobItem.getName(), this.build));
+            files.add(new AzureBlobVirtualFile(this.container, stripTrailingSlash(blobItem.getName()), this.build));
         }
         return files;
     }

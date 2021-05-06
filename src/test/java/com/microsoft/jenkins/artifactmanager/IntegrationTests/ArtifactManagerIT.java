@@ -6,6 +6,7 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import com.microsoft.jenkins.artifactmanager.AzureArtifactConfig;
 import com.microsoft.jenkins.artifactmanager.AzureArtifactManager;
+import com.microsoft.jenkins.artifactmanager.AzureArtifactManagerFactory;
 import com.microsoft.jenkins.artifactmanager.Constants;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -14,10 +15,16 @@ import hudson.model.BuildListener;
 import hudson.model.FreeStyleProject;
 import hudson.model.Run;
 import hudson.model.StreamBuildListener;
+import hudson.util.DescribableList;
 import jenkins.model.ArtifactManager;
+import jenkins.model.ArtifactManagerConfiguration;
+import jenkins.model.ArtifactManagerFactory;
+import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.apache.commons.io.FileUtils;
+import org.jenkinsci.plugins.workflow.ArtifactManagerTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -48,9 +55,16 @@ public class ArtifactManagerIT extends IntegrationTest {
 
     @Before
     public void setUp() throws IOException, ExecutionException, InterruptedException {
-        FreeStyleProject freeStyleProject = j.createFreeStyleProject();
-
+        config = new AzureArtifactConfig("storage");
         String containerName = "testartifacts" + TestEnvironment.GenerateRandomString(15);
+        config.setContainer(containerName);
+        config.setPrefix(PREFIX);
+        AzureArtifactManagerFactory artifactManager = new AzureArtifactManagerFactory(config);
+
+        ArtifactManagerConfiguration artifactManagerConfiguration = ArtifactManagerConfiguration.get();
+        DescribableList<ArtifactManagerFactory, ArtifactManagerFactoryDescriptor> artifactManagerFactories =
+                artifactManagerConfiguration.getArtifactManagerFactories();
+        artifactManagerFactories.replace(artifactManager);
 
         File workspaceDir = new File(containerName);
         ByteArrayOutputStream listener = new ByteArrayOutputStream();
@@ -58,10 +72,7 @@ public class ArtifactManagerIT extends IntegrationTest {
         mockLauncher = new Launcher.DummyLauncher(mockListener);
         workspace = new FilePath(mockLauncher.getChannel(), workspaceDir.getAbsolutePath());
 
-        config = new AzureArtifactConfig();
-        config.setContainer(containerName);
-        config.setPrefix(PREFIX);
-
+        FreeStyleProject freeStyleProject = j.createFreeStyleProject();
         run = freeStyleProject.scheduleBuild2(0).get();
 
         testEnv = new TestEnvironment(containerName);
@@ -120,6 +131,7 @@ public class ArtifactManagerIT extends IntegrationTest {
 
         workspace.deleteRecursive();
         artifactManager.unstash(STASH_NAME, workspace, mockLauncher, envVars, mockListener);
+        artifactManager.clearAllStashes(mockListener);
         assertEquals(TestEnvironment.TOTAL_FILES, workspace.list().size());
     }
 
@@ -151,5 +163,16 @@ public class ArtifactManagerIT extends IntegrationTest {
             }
         }
 
+    }
+
+    @Test
+    @Ignore("https://github.com/jenkinsci/azure-artifact-manager-plugin/pull/15/files#r627353801")
+    public void artifactStash() throws Throwable {
+        // TODO haven't managed to get weird characters test fully working, disabled for now
+        ArtifactManagerTest.artifactStash(j, getArtifactManagerFactory(), false, null);
+    }
+
+    private ArtifactManagerFactory getArtifactManagerFactory() {
+        return new AzureArtifactManagerFactory(this.config);
     }
 }
