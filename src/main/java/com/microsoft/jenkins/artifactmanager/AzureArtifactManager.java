@@ -7,10 +7,11 @@ package com.microsoft.jenkins.artifactmanager;
 
 import com.azure.core.credential.AzureSasCredential;
 import com.azure.core.http.rest.PagedIterable;
-import com.azure.core.util.Context;
+import com.azure.storage.blob.BlobAsyncClient;
 import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceAsyncClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.BlobUrlParts;
 import com.azure.storage.blob.models.BlobHttpHeaders;
@@ -138,7 +139,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 objects.add(uploadObject);
             }
 
-            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects));
+            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects, listener));
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -223,44 +224,48 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         private final ProxyConfiguration proxy;
         private final List<UploadObject> uploadObjects;
+        private final TaskListener listener;
 
-        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects) {
+        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects, TaskListener listener) {
             this.proxy = proxy;
             this.uploadObjects = uploadObjects;
+            this.listener = listener;
         }
 
-        private BlobServiceClient getBlobServiceClient(String host, String sas) {
+        private BlobServiceAsyncClient getBlobServiceClient(String host, String sas) {
             return new BlobServiceClientBuilder()
                     .credential(new AzureSasCredential(sas))
                     .httpClient(HttpClientRetriever.get(proxy))
                     .endpoint("https://" + host)
-                    .buildClient();
+                    .buildAsyncClient();
         }
 
         @Override
         public Void invoke(File f, VirtualChannel channel) {
-            // TODO parallelise / async
             for (UploadObject uploadObject : uploadObjects) {
                 BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
 
-                BlobClient blobClient = getBlobClient(blobUrlParts);
+                BlobAsyncClient blobClient = getBlobClient(blobUrlParts);
 
                 String file = new File(f, uploadObject.getName()).getAbsolutePath();
                 BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
                         .setHeaders(getBlobHttpHeaders(uploadObject));
-                blobClient.uploadFromFileWithResponse(options, null, Context.NONE);
+                blobClient.uploadFromFileWithResponse(options)
+                        .doOnError(throwable -> listener.error("[AzureStorage] Failed to upload file %s, error: %s",
+                                file, throwable.getMessage()))
+                        .subscribe();
             }
             return null;
         }
 
-        private BlobClient getBlobClient(BlobUrlParts blobUrlParts) {
+        private BlobAsyncClient getBlobClient(BlobUrlParts blobUrlParts) {
             String sas = blobUrlParts.getCommonSasQueryParameters().encode();
 
-            BlobServiceClient blobServiceClient = getBlobServiceClient(blobUrlParts.getHost(), sas);
+            BlobServiceAsyncClient blobServiceClient = getBlobServiceClient(blobUrlParts.getHost(), sas);
 
-            BlobContainerClient containerClient = blobServiceClient
-                    .getBlobContainerClient(blobUrlParts.getBlobContainerName());
-            return containerClient.getBlobClient(blobUrlParts.getBlobName());
+            BlobContainerAsyncClient containerClient = blobServiceClient
+                    .getBlobContainerAsyncClient(blobUrlParts.getBlobContainerName());
+            return containerClient.getBlobAsyncClient(blobUrlParts.getBlobName());
         }
 
         private BlobHttpHeaders getBlobHttpHeaders(UploadObject uploadObject) {
