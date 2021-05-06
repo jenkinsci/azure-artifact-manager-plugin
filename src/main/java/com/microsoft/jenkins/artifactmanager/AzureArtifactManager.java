@@ -139,7 +139,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 objects.add(uploadObject);
             }
 
-            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects, listener));
+            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects));
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -224,16 +224,13 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         private final ProxyConfiguration proxy;
         private final List<UploadObject> uploadObjects;
-        private final TaskListener listener;
 
-        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects, TaskListener listener) {
+        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects) {
             this.proxy = proxy;
             this.uploadObjects = uploadObjects;
-            this.listener = listener;
         }
 
         private BlobServiceClient getBlobServiceClient(String host, String sas) {
-            listener.getLogger().println(sas);
             return new BlobServiceClientBuilder()
                     .credential(new AzureSasCredential(sas))
                     .httpClient(HttpClientRetriever.get(proxy))
