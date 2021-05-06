@@ -60,10 +60,11 @@ public final class Utils {
     }
 
     public static boolean isPrefixValid(String prefix) {
-        if (prefix != null) {
-            return prefix.matches(PREFIX_PATTERN);
+        if (StringUtils.isEmpty(prefix)) {
+            return true;
         }
-        return false;
+
+        return prefix.matches(PREFIX_PATTERN);
     }
 
     public static boolean containTokens(String text) {
