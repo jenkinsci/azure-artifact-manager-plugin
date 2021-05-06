@@ -1,17 +1,14 @@
 package com.microsoft.jenkins.artifactmanager.IntegrationTests;
 
-import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.blob.CloudBlobClient;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsGlobalConfig;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
-import org.junit.Rule;
-import org.jvnet.hudson.test.JenkinsRule;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import org.junit.ClassRule;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -19,8 +16,10 @@ import java.util.UUID;
  * Copy from windows-azure-storage-plugin since they use the same integration tests environment.
  */
 public class IntegrationTest {
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    @ClassRule
+    // different tests access this so provide absolute path
+    @ConfiguredWithCode("/com/microsoft/jenkins/artifactmanager/configuration-as-code.yml")
+    public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     protected static class TestEnvironment {
         public final String azureStorageAccountName;
@@ -33,23 +32,18 @@ public class IntegrationTest {
         public HashMap<String, File> uploadFileList = new HashMap<>();
         public String containerName;
         public String shareName;
-        public CloudBlobContainer container;
-        public CloudStorageAccount account;
-        public CloudBlobClient blobClient;
+        public BlobContainerClient container;
+        public BlobServiceClient blobClient;
 
-        TestEnvironment(String name) throws URISyntaxException {
+        TestEnvironment(String name) {
             azureStorageAccountName = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_NAME");
             azureStorageAccountKey1 = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_KEY1");
             azureStorageAccountKey2 = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_KEY2");
 
             blobURL = Utils.DEF_BLOB_URL;
-            AzureStorageAccount.StorageAccountCredential u = new AzureStorageAccount.StorageAccountCredential(azureStorageAccountName, azureStorageAccountKey1, blobURL);
             sampleStorageAccount = new StorageAccountInfo(azureStorageAccountName, azureStorageAccountKey1, blobURL);
             containerName = name;
             shareName = name;
-
-            // disable AI in testing
-            AppInsightsGlobalConfig.get().setAppInsightsEnabled(false);
         }
 
         private static String loadFromEnv(final String name) {
@@ -72,9 +66,4 @@ public class IntegrationTest {
     }
 
     protected TestEnvironment testEnv = null;
-
-    protected void disableAI() {
-        // disable AI in testing
-        AppInsightsGlobalConfig.get().setAppInsightsEnabled(false);
-    }
 }

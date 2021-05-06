@@ -34,3 +34,6 @@ hs_err_pid*
 *.project
 *.classpath
 *.iml
+.env
+testvirtualfile*
+testartifact*

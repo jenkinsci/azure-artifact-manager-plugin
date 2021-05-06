@@ -5,14 +5,21 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
+import com.azure.core.credential.AzureSasCredential;
+import com.azure.core.http.rest.PagedIterable;
+import com.azure.storage.blob.BlobAsyncClient;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerAsyncClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceAsyncClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.BlobUrlParts;
+import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.options.BlobUploadFromFileOptions;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.google.common.collect.Lists;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.CloudBlob;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.blob.CloudBlobDirectory;
-import com.microsoft.azure.storage.blob.CloudBlockBlob;
-import com.microsoft.azure.storage.blob.ListBlobItem;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsUtils;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
@@ -25,15 +32,21 @@ import com.microsoftopentechnologies.windowsazurestorage.service.model.UploadTyp
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Functions;
 import hudson.Launcher;
+import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.util.DirScanner;
 import hudson.util.LogTaskListener;
 import hudson.util.io.ArchiverFactory;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.ArtifactManager;
+import jenkins.model.Jenkins;
 import jenkins.util.VirtualFile;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
@@ -42,21 +55,28 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.io.Serializable;
 import java.net.URISyntaxException;
+import java.net.URLConnection;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.microsoft.jenkins.artifactmanager.Utils.generateExpiryDate;
+
 @Restricted(NoExternalUse.class)
 public final class AzureArtifactManager extends ArtifactManager implements StashManager.StashAwareArtifactManager {
     private static final Logger LOGGER = Logger.getLogger(ArtifactManager.class.getName());
-    private Run<?, ?> build;
-    private AzureArtifactConfig config;
+    private final Run<?, ?> build;
+    private final AzureArtifactConfig config;
     private String actualContainerName;
 
     private transient String defaultKey;
@@ -98,31 +118,160 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         LOGGER.fine(Messages.AzureArtifactManager_archive(workspace, artifacts));
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        List<String> filePath = new ArrayList<>();
-        for (Map.Entry<String, String> entry : artifacts.entrySet()) {
-            filePath.add(entry.getValue());
-        }
-        String filesPath = String.join(Constants.COMMA, filePath);
 
-        UploadServiceData serviceData = new UploadServiceData(build, workspace, launcher, listener, accountInfo);
-        serviceData.setVirtualPath(getVirtualPath(Constants.ARTIFACTS_PATH));
-        serviceData.setContainerName(getActualContainerName(listener));
-        serviceData.setFilePath(filesPath);
-        serviceData.setUploadType(UploadType.INDIVIDUAL);
+        List<UploadObject> objects = new ArrayList<>();
 
-        UploadService uploadService = new UploadToBlobService(serviceData);
+        Map<String, String> contentTypes = workspace
+                .act(new ContentTypeGuesser(new ArrayList<>(artifacts.keySet()), listener));
+
         try {
-            uploadService.execute();
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "FileCount", String.valueOf(artifacts.size()));
-        } catch (WAStorageException e) {
-            listener.getLogger().println(Messages.AzureArtifactManager_archive_fail(e));
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_ARCHIVE_FAILED,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "FileCount", String.valueOf(artifacts.size()),
-                    "Message", e.getMessage());
+            BlobContainerClient container = Utils.getBlobContainerReference(accountInfo, config.getContainer(), false);
+
+            for (Map.Entry<String, String> entry : contentTypes.entrySet()) {
+                String path = "artifacts/" + entry.getKey();
+                String blobPath = getBlobPath(path);
+
+                BlobClient blobClient = container.getBlobClient(blobPath);
+                String sas = generateSas(blobClient);
+                String blobUrl = blobClient.getBlobUrl() + "?" + sas;
+
+                UploadObject uploadObject = new UploadObject(entry.getKey(), blobUrl, entry.getValue());
+                objects.add(uploadObject);
+            }
+
+            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects, listener));
+        } catch (Exception e) {
             throw new IOException(e);
+        }
+    }
+
+    private String generateSas(BlobClient blobClient) {
+        BlobSasPermission permissions = new BlobSasPermission().setWritePermission(true);
+        BlobServiceSasSignatureValues sasSignatureValues =
+                new BlobServiceSasSignatureValues(generateExpiryDate(), permissions);
+
+        return blobClient.generateSas(sasSignatureValues);
+    }
+
+    private String getBlobPath(String path) {
+        return getBlobPath(defaultKey, path);
+    }
+
+    private String getBlobPath(String key, String path) {
+        return String.format("%s%s/%s", config.getPrefix(), key, path);
+    }
+
+    private static class ContentTypeGuesser extends MasterToSlaveFileCallable<Map<String, String>> {
+        private static final long serialVersionUID = 1L;
+
+        private final Collection<String> relPaths;
+        private final TaskListener listener;
+
+        ContentTypeGuesser(Collection<String> relPaths, TaskListener listener) {
+            this.relPaths = relPaths;
+            this.listener = listener;
+        }
+
+        @Override
+        public Map<String, String> invoke(File f, VirtualChannel channel) {
+            Map<String, String> contentTypes = new HashMap<>();
+            for (String relPath : relPaths) {
+                File theFile = new File(f, relPath);
+                try {
+                    String contentType = Files.probeContentType(theFile.toPath());
+                    if (contentType == null) {
+                        contentType = URLConnection.guessContentTypeFromName(theFile.getName());
+                    }
+                    contentTypes.put(relPath, contentType);
+                } catch (IOException e) {
+                    Functions.printStackTrace(e, listener
+                            .error("Unable to determine content type for file: " + theFile));
+                }
+            }
+            return contentTypes;
+        }
+    }
+
+    private static class UploadObject implements Serializable {
+        private final String name;
+        private final String url;
+        private final String contentType;
+
+        UploadObject(
+                String name,
+                String url,
+                String contentType
+        ) {
+            this.name = name;
+            this.url = url;
+            this.contentType = contentType;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+    }
+
+    private static class UploadToBlobStorage extends MasterToSlaveFileCallable<Void> {
+
+        private final ProxyConfiguration proxy;
+        private final List<UploadObject> uploadObjects;
+        private final TaskListener listener;
+
+        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects, TaskListener listener) {
+            this.proxy = proxy;
+            this.uploadObjects = uploadObjects;
+            this.listener = listener;
+        }
+
+        private BlobServiceAsyncClient getBlobServiceClient(String host, String sas) {
+            return new BlobServiceClientBuilder()
+                    .credential(new AzureSasCredential(sas))
+                    .httpClient(HttpClientRetriever.get(proxy))
+                    .endpoint("https://" + host)
+                    .buildAsyncClient();
+        }
+
+        @Override
+        public Void invoke(File f, VirtualChannel channel) {
+            for (UploadObject uploadObject : uploadObjects) {
+                BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
+
+                BlobAsyncClient blobClient = getBlobClient(blobUrlParts);
+
+                String file = new File(f, uploadObject.getName()).getAbsolutePath();
+                BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
+                        .setHeaders(getBlobHttpHeaders(uploadObject));
+                blobClient.uploadFromFileWithResponse(options)
+                        .doOnError(throwable -> listener.error("[AzureStorage] Failed to upload file %s, error: %s",
+                                file, throwable.getMessage()))
+                        .subscribe();
+            }
+            return null;
+        }
+
+        private BlobAsyncClient getBlobClient(BlobUrlParts blobUrlParts) {
+            String sas = blobUrlParts.getCommonSasQueryParameters().encode();
+
+            BlobServiceAsyncClient blobServiceClient = getBlobServiceClient(blobUrlParts.getHost(), sas);
+
+            BlobContainerAsyncClient containerClient = blobServiceClient
+                    .getBlobContainerAsyncClient(blobUrlParts.getBlobContainerName());
+            return containerClient.getBlobAsyncClient(blobUrlParts.getBlobName());
+        }
+
+        private BlobHttpHeaders getBlobHttpHeaders(UploadObject uploadObject) {
+            BlobHttpHeaders method = new BlobHttpHeaders();
+            method.setContentType(uploadObject.getContentType());
+            return method;
         }
     }
 
@@ -148,49 +297,39 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         try {
             int count = deleteWithPrefix(virtualPath);
             return count > 0;
-        } catch (URISyntaxException | StorageException e) {
+        } catch (URISyntaxException e) {
             LOGGER.severe(Messages.AzureArtifactManager_delete_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException,
-            StorageException, InterruptedException {
-        CloudBlobContainer container = getContainer();
-        Iterable<ListBlobItem> listBlobItems = container.listBlobs(prefix);
-        return deleteBlobs(listBlobItems);
+    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException, InterruptedException {
+        BlobContainerClient container = getContainer();
+        PagedIterable<BlobItem> listBlobItems = container.listBlobsByHierarchy(prefix);
+        return deleteBlobs(container, listBlobItems);
     }
 
-    private int deleteBlobs(Iterable<ListBlobItem> blobItems)
-            throws StorageException, URISyntaxException, IOException {
+    private int deleteBlobs(BlobContainerClient container, PagedIterable<BlobItem> blobItems) {
         int count = 0;
-        for (ListBlobItem blobItem : blobItems) {
-            if (blobItem instanceof CloudBlob) {
-                ((CloudBlob) blobItem).uploadProperties(null, null,
-                        Utils.updateUserAgent());
-                ((CloudBlob) blobItem).delete();
-                count++;
-            } else if (blobItem instanceof CloudBlobDirectory) {
-                count += deleteBlobs(((CloudBlobDirectory) blobItem).listBlobs());
-            }
+        for (BlobItem blobItem : blobItems) {
+            BlobClient blobClient = container.getBlobClient(blobItem.getName());
+            blobClient.delete();
         }
         return count;
     }
 
-    private CloudBlobContainer getContainer() throws StorageException, IOException,
+    private BlobContainerClient getContainer() throws IOException,
             URISyntaxException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         if (StringUtils.isEmpty(this.actualContainerName)) {
             this.actualContainerName = getActualContainerName(new LogTaskListener(LOGGER, Level.INFO));
         }
 
-        CloudBlobContainer container = Utils.getBlobContainerReference(
+        return Utils.getBlobContainerReference(
                 accountInfo,
                 this.actualContainerName,
-                true,
-                true,
-                false);
-        return container;
+                true
+        );
     }
 
     @Override
@@ -226,15 +365,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             UploadService uploadService = new UploadToBlobService(serviceData);
             try {
                 uploadService.execute();
-                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH,
-                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                        "FileCount", String.valueOf(count));
             } catch (WAStorageException e) {
                 listener.getLogger().println(Messages.AzureArtifactManager_stash_fail(e));
-                AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_STASH_FAILED,
-                        "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                        "FileCount", String.valueOf(count),
-                        "Message", e.getMessage());
                 throw new IOException(e);
             }
         } finally {
@@ -261,13 +393,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
         try {
             downloadService.execute();
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()));
         } catch (WAStorageException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_unstash_fail(e));
-            AzureArtifactManagerPlugin.sendEvent(Constants.AI_ARTIFACT_MANAGER, Constants.AI_UNSTASH_FAILED,
-                    "StorageAccount", AppInsightsUtils.hash(accountInfo.getStorageAccName()),
-                    "Message", e.getMessage());
             throw new IOException(e);
         }
 
@@ -286,12 +413,11 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     @Override
     public void clearAllStashes(@Nonnull TaskListener listener) throws IOException, InterruptedException {
         String virtualPath = getVirtualPath(Constants.STASHES_PATH);
-        // TODO check
 
         try {
             int count = deleteWithPrefix(virtualPath);
             listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, this.actualContainerName));
-        } catch (URISyntaxException | StorageException e) {
+        } catch (URISyntaxException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_clear_stash_fail(e));
             throw new IOException(e);
         }
@@ -311,36 +437,42 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.defaultKey);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount,
                     this.defaultKey, azureArtifactManager.defaultKey));
-        } catch (URISyntaxException | StorageException | InterruptedException e) {
+        } catch (URISyntaxException | InterruptedException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
     }
 
-    private int copyBlobs(Iterable<ListBlobItem> sourceBlobs, String toKey, CloudBlobContainer container) throws
-            StorageException, URISyntaxException {
+    private int copyBlobs(PagedIterable<BlobItem> sourceBlobs, String toKey, BlobContainerClient container) {
         int count = 0;
-        for (ListBlobItem sourceBlob : sourceBlobs) {
-            if (sourceBlob instanceof CloudBlob) {
-                URI uri = sourceBlob.getUri();
-                String path = uri.getPath();
-                String sourceFilePath = path.substring(this.actualContainerName.length() + 2);
-                String destFilePath = sourceFilePath.replace(this.defaultKey, toKey);
-                CloudBlockBlob destBlob = container.getBlockBlobReference(destFilePath);
-                destBlob.startCopy(uri);
+        for (BlobItem sourceBlob : sourceBlobs) {
+            if (Boolean.TRUE.equals(sourceBlob.isPrefix())) {
+                count += copyBlobs(
+                        container.listBlobsByHierarchy(sourceBlob.getName()),
+                        toKey,
+                        container
+                );
+            } else {
+                String destFilePath = sourceBlob.getName().replace(this.defaultKey, toKey);
+
+                BlobClient blobClient = container.getBlobClient(sourceBlob.getName());
+                BlobClient destBlob = container.getBlobClient(destFilePath);
+
+                String srcBlobUrl = blobClient.getBlobUrl();
+                String srcBlobSas = blobClient.generateSas(Utils.generateBlobPolicy());
+
+                destBlob.copyFromUrl(srcBlobUrl + "?" + srcBlobSas);
                 count++;
-            } else if (sourceBlob instanceof CloudBlobDirectory) {
-                count += copyBlobs(((CloudBlobDirectory) sourceBlob).listBlobs(), toKey, container);
             }
         }
         return count;
     }
 
     private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException,
-            StorageException, InterruptedException {
-        CloudBlobContainer container = getContainer();
+            InterruptedException {
+        BlobContainerClient container = getContainer();
         String sourcePath = getVirtualPath(prefix);
-        Iterable<ListBlobItem> sourceBlobs = container.listBlobs(sourcePath);
+        PagedIterable<BlobItem> sourceBlobs = container.listBlobsByHierarchy(sourcePath);
         return copyBlobs(sourceBlobs, toKey, container);
     }
 }

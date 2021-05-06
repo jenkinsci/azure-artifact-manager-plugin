@@ -5,44 +5,31 @@
 
 package com.microsoft.jenkins.artifactmanager;
 
-import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.OperationContext;
-import com.microsoft.azure.storage.RetryNoRetry;
-import com.microsoft.azure.storage.StorageCredentialsAccountAndKey;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.BlobContainerPermissions;
-import com.microsoft.azure.storage.blob.BlobContainerPublicAccessType;
-import com.microsoft.azure.storage.blob.CloudBlob;
-import com.microsoft.azure.storage.blob.CloudBlobClient;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.blob.SharedAccessBlobPermissions;
-import com.microsoft.azure.storage.blob.SharedAccessBlobPolicy;
-import com.microsoft.azure.storage.core.BaseRequest;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
+import com.azure.storage.common.StorageSharedKeyCredential;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Constants;
 import hudson.Util;
 import hudson.model.Item;
 import hudson.util.DescribableList;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
+import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 public final class Utils {
     private static final String PREFIX_PATTERN = "^[a-z0-9A-Z]{1,30}/?$";
@@ -53,8 +40,7 @@ public final class Utils {
                 artifactManagerConfiguration.getArtifactManagerFactories();
         AzureArtifactManagerFactory azureArtifactManagerFactory =
                 artifactManagerFactories.get(AzureArtifactManagerFactory.class);
-        AzureArtifactConfig config = azureArtifactManagerFactory.getConfig();
-        return config;
+        return azureArtifactManagerFactory.getConfig();
     }
 
     public static boolean validateContainerName(String containerName) {
@@ -68,18 +54,17 @@ public final class Utils {
             if (!lcContainerName.equals(containerName)) {
                 return false;
             }
-            if (lcContainerName.matches(Constants.VAL_CNT_NAME)) {
-                return true;
-            }
+            return lcContainerName.matches(Constants.VAL_CNT_NAME);
         }
         return false;
     }
 
     public static boolean isPrefixValid(String prefix) {
-        if (prefix != null) {
-            return prefix.matches(PREFIX_PATTERN);
+        if (StringUtils.isEmpty(prefix)) {
+            return true;
         }
-        return false;
+
+        return prefix.matches(PREFIX_PATTERN);
     }
 
     public static boolean containTokens(String text) {
@@ -102,8 +87,7 @@ public final class Utils {
         AzureArtifactConfig config = getArtifactConfig();
         AzureStorageAccount.StorageAccountCredential accountCredentials =
                 AzureStorageAccount.getStorageAccountCredential(item, config.getStorageCredentialId());
-        StorageAccountInfo accountInfo = AzureStorageAccount.convertToStorageAccountInfo(accountCredentials);
-        return accountInfo;
+        return AzureStorageAccount.convertToStorageAccountInfo(accountCredentials);
     }
 
     public static String generateBlobSASURL(
@@ -111,11 +95,10 @@ public final class Utils {
             String containerName,
             String blobName) throws Exception {
 
-        CloudStorageAccount cloudStorageAccount = getCloudStorageAccount(storageAccount);
+        BlobServiceClient cloudStorageAccount = getCloudStorageAccount(storageAccount);
 
         // Create the blob client.
-        CloudBlobClient blobClient = cloudStorageAccount.createCloudBlobClient();
-        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        BlobContainerClient container = cloudStorageAccount.getBlobContainerClient(containerName);
 
         // At this point need to throw an error back since container itself did not exist.
         if (!container.exists()) {
@@ -123,160 +106,59 @@ public final class Utils {
                     + " does not exist in storage account " + storageAccount.getStorageAccName());
         }
 
-        CloudBlob blob = container.getBlockBlobReference(blobName);
-        String sas = blob.generateSharedAccessSignature(generateBlobPolicy(), null);
+        BlobClient blob = container.getBlobClient(blobName);
 
-        return sas;
+        return blob.generateSas(generateBlobPolicy());
     }
 
-    public static SharedAccessBlobPolicy generateBlobPolicy() {
-        SharedAccessBlobPolicy policy = new SharedAccessBlobPolicy();
-        policy.setSharedAccessExpiryTime(generateExpiryDate());
-        policy.setPermissions(EnumSet.of(SharedAccessBlobPermissions.READ));
-
-        return policy;
+    public static BlobServiceSasSignatureValues generateBlobPolicy() {
+        return new BlobServiceSasSignatureValues(generateExpiryDate(), new BlobSasPermission()
+                .setReadPermission(true));
     }
 
-    public static Date generateExpiryDate() {
-        GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        calendar.setTime(new Date());
-        calendar.add(Calendar.HOUR, 1);
-        return calendar.getTime();
+    public static OffsetDateTime generateExpiryDate() {
+        return OffsetDateTime.now().plusHours(1);
     }
 
-    public static CloudBlobContainer getBlobContainerReference(StorageAccountInfo storageAccount,
-                                                               String containerName,
-                                                               boolean createIfNotExist,
-                                                               boolean allowRetry,
-                                                               Boolean cntPubAccess)
-            throws URISyntaxException, StorageException, IOException {
+    public static BlobContainerClient getBlobContainerReference(StorageAccountInfo storageAccount,
+                                                                String containerName,
+                                                                boolean createIfNotExist)
+            throws URISyntaxException, IOException {
 
-        final CloudStorageAccount cloudStorageAccount = getCloudStorageAccount(storageAccount);
-        final CloudBlobClient serviceClient = cloudStorageAccount.createCloudBlobClient();
+        final BlobServiceClient serviceClient = getCloudStorageAccount(storageAccount);
 
-        if (!allowRetry) {
-            // Setting no retry policy
-            final RetryNoRetry rnr = new RetryNoRetry();
-            // serviceClient.setRetryPolicyFactory(rnr);
-            serviceClient.getDefaultRequestOptions().setRetryPolicyFactory(rnr);
-        }
-
-        final CloudBlobContainer container = serviceClient.getContainerReference(containerName);
+        final BlobContainerClient container = serviceClient.getBlobContainerClient(containerName);
 
         boolean cntExists = container.exists();
         if (createIfNotExist && !cntExists) {
-            container.createIfNotExists(null, Utils.updateUserAgent());
+            container.create();
         }
-
-        // Apply permissions only if container is created newly
-        setContainerPermission(container, cntExists, cntPubAccess);
 
         return container;
     }
 
-    private static void setContainerPermission(
-            CloudBlobContainer container,
-            boolean cntExists,
-            Boolean cntPubAccess) throws StorageException {
-        if (!cntExists && cntPubAccess != null) {
-            // Set access permissions on container.
-            final BlobContainerPermissions cntPerm = new BlobContainerPermissions();
-            if (cntPubAccess) {
-                cntPerm.setPublicAccess(BlobContainerPublicAccessType.CONTAINER);
-            } else {
-                cntPerm.setPublicAccess(BlobContainerPublicAccessType.OFF);
-            }
-            container.uploadPermissions(cntPerm);
-        }
-    }
-
-    private static String getEndpointSuffix(String blobURL) throws URISyntaxException {
-        final int endSuffixStartIndex = blobURL.toLowerCase().indexOf("core");
-        if (endSuffixStartIndex < 0) {
-            throw new URISyntaxException(blobURL, "The blob endpoint is not correct!");
-        }
-
-        return blobURL.substring(endSuffixStartIndex);
-    }
-
-    public static CloudStorageAccount getCloudStorageAccount(
+    public static BlobServiceClient getCloudStorageAccount(
             final StorageAccountInfo storageAccount) throws URISyntaxException, MalformedURLException {
-        CloudStorageAccount cloudStorageAccount;
-        final String accName = storageAccount.getStorageAccName();
-        final String blobURLStr = storageAccount.getBlobEndPointURL();
-        final StorageCredentialsAccountAndKey credentials = new StorageCredentialsAccountAndKey(accName,
-                storageAccount.getStorageAccountKey());
-
-        if (StringUtils.isBlank(blobURLStr) || blobURLStr.equalsIgnoreCase(Constants.DEF_BLOB_URL)) {
-            cloudStorageAccount = new CloudStorageAccount(credentials, true, null);
-        } else {
-            final URL blobURL = new URL(blobURLStr);
-            boolean useHttps = blobURL.getProtocol().equalsIgnoreCase("https");
-
-            cloudStorageAccount = new CloudStorageAccount(credentials, useHttps, getEndpointSuffix(blobURLStr));
-        }
-
-        return cloudStorageAccount;
+        return new BlobServiceClientBuilder()
+                .credential(new StorageSharedKeyCredential(storageAccount.getStorageAccName(),
+                        storageAccount.getStorageAccountKey()))
+                .httpClient(HttpClientRetriever.get())
+                .endpoint(joinAccountNameAndEndpoint(storageAccount.getStorageAccName(),
+                        storageAccount.getBlobEndPointURL()))
+                .buildClient();
     }
 
-    @Nonnull
-    public static Jenkins getJenkinsInstance() {
-        return Jenkins.getInstance();
-    }
-
-    public static String getPluginInstance() {
-        String instanceId = null;
-        try {
-            if (Utils.getJenkinsInstance().getLegacyInstanceId() == null) {
-                instanceId = "local";
-            } else {
-                instanceId = Utils.getJenkinsInstance().getLegacyInstanceId();
-            }
-        } catch (Exception e) {
-        }
-        return instanceId;
-    }
-
-    public static String getPluginVersion() {
-        String version = Utils.class.getPackage().getImplementationVersion();
-        return version;
-    }
-
-    public static OperationContext updateUserAgent() throws IOException {
-        return updateUserAgent(null);
-    }
-
-    public static OperationContext updateUserAgent(final Long contentLength) throws IOException {
-        String version = null;
-        String instanceId = null;
-        try {
-            version = Utils.getPluginVersion();
-            if (version == null) {
-                version = "local";
-            }
-            instanceId = Utils.getPluginInstance();
-        } catch (Exception e) {
-        }
-
-        String pluginUserAgent;
-        if (contentLength == null) {
-            pluginUserAgent = String.format("%s/%s/%s", Constants.PLUGIN_NAME, version, instanceId);
-        } else {
-            pluginUserAgent = String.format("%s/%s/%s/ContentLength/%s",
-                    Constants.PLUGIN_NAME, version, instanceId, contentLength.toString());
-        }
-
-        final String baseUserAgent = BaseRequest.getUserAgent();
-        if (baseUserAgent != null) {
-            pluginUserAgent = pluginUserAgent + "/" + baseUserAgent;
-        }
-
-        OperationContext opContext = new OperationContext();
-        HashMap<String, String> temp = new HashMap<String, String>();
-        temp.put("User-Agent", pluginUserAgent);
-
-        opContext.setUserHeaders(temp);
-        return opContext;
+    /**
+     * The old SDK worked with 'endpoint suffixes' in the form http(s)://blob.core.windows.net.
+     * New SDK uses endpoints: https://my-account-name.blob.core.windows.net.
+     *
+     * UI still stores the suffix so we need to join them
+     */
+    @SuppressWarnings("HttpUrlsUsage")
+    private static String joinAccountNameAndEndpoint(String accountName, String urlSuffix) {
+        return urlSuffix
+                .replace("http://", "https://")
+                .replace("https://", String.format("https://%s.", accountName));
     }
 
     private Utils() {
