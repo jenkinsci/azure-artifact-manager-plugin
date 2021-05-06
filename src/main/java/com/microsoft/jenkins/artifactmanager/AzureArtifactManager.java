@@ -120,7 +120,6 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         List<UploadObject> objects = new ArrayList<>();
 
-        // TODO not working
         Map<String, String> contentTypes = workspace
                 .act(new ContentTypeGuesser(new ArrayList<>(artifacts.keySet()), listener));
 
@@ -409,7 +408,6 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     @Override
     public void clearAllStashes(@Nonnull TaskListener listener) throws IOException, InterruptedException {
         String virtualPath = getVirtualPath(Constants.STASHES_PATH);
-        // TODO check
 
         try {
             int count = deleteWithPrefix(virtualPath);
