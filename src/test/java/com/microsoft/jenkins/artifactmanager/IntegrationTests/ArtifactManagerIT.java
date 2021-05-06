@@ -166,10 +166,9 @@ public class ArtifactManagerIT extends IntegrationTest {
     }
 
     @Test
-    @Ignore("https://github.com/jenkinsci/azure-artifact-manager-plugin/pull/15/files#r627353801")
     public void artifactStash() throws Throwable {
         // TODO haven't managed to get weird characters test fully working, disabled for now
-        ArtifactManagerTest.artifactStash(j, getArtifactManagerFactory(), false, null);
+        ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), false, null);
     }
 
     private ArtifactManagerFactory getArtifactManagerFactory() {
