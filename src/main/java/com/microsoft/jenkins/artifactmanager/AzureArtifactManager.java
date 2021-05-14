@@ -139,7 +139,12 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 objects.add(uploadObject);
             }
 
-            workspace.act(new UploadToBlobStorage(Jenkins.get().getProxy(), objects, listener));
+            workspace.act(new UploadToBlobStorage(
+                    Jenkins.get().getProxy(),
+                    accountInfo.getBlobEndPointURL(),
+                    objects,
+                    listener
+            ));
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -223,20 +228,27 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private static class UploadToBlobStorage extends MasterToSlaveFileCallable<Void> {
 
         private final ProxyConfiguration proxy;
+        private final String blobEndpoint;
         private final List<UploadObject> uploadObjects;
         private final TaskListener listener;
 
-        UploadToBlobStorage(ProxyConfiguration proxy, List<UploadObject> uploadObjects, TaskListener listener) {
+        UploadToBlobStorage(
+                ProxyConfiguration proxy,
+                String blobEndpoint,
+                List<UploadObject> uploadObjects,
+                TaskListener listener
+        ) {
             this.proxy = proxy;
+            this.blobEndpoint = blobEndpoint;
             this.uploadObjects = uploadObjects;
             this.listener = listener;
         }
 
-        private BlobServiceAsyncClient getBlobServiceClient(String host, String sas) {
+        private BlobServiceAsyncClient getBlobServiceClient(String sas) {
             return new BlobServiceClientBuilder()
                     .credential(new AzureSasCredential(sas))
                     .httpClient(HttpClientRetriever.get(proxy))
-                    .endpoint("https://" + host)
+                    .endpoint(blobEndpoint)
                     .buildAsyncClient();
         }
 
@@ -260,8 +272,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
         private BlobAsyncClient getBlobClient(BlobUrlParts blobUrlParts) {
             String sas = blobUrlParts.getCommonSasQueryParameters().encode();
-
-            BlobServiceAsyncClient blobServiceClient = getBlobServiceClient(blobUrlParts.getHost(), sas);
+            BlobServiceAsyncClient blobServiceClient = getBlobServiceClient(sas);
 
             BlobContainerAsyncClient containerClient = blobServiceClient
                     .getBlobContainerAsyncClient(blobUrlParts.getBlobContainerName());

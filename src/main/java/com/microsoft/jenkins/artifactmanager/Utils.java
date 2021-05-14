@@ -25,7 +25,6 @@ import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -138,27 +137,13 @@ public final class Utils {
     }
 
     public static BlobServiceClient getCloudStorageAccount(
-            final StorageAccountInfo storageAccount) throws URISyntaxException, MalformedURLException {
+            final StorageAccountInfo storageAccount) {
         return new BlobServiceClientBuilder()
                 .credential(new StorageSharedKeyCredential(storageAccount.getStorageAccName(),
                         storageAccount.getStorageAccountKey()))
                 .httpClient(HttpClientRetriever.get())
-                .endpoint(joinAccountNameAndEndpoint(storageAccount.getStorageAccName(),
-                        storageAccount.getBlobEndPointURL()))
+                .endpoint(storageAccount.getBlobEndPointURL())
                 .buildClient();
-    }
-
-    /**
-     * The old SDK worked with 'endpoint suffixes' in the form http(s)://blob.core.windows.net.
-     * New SDK uses endpoints: https://my-account-name.blob.core.windows.net.
-     *
-     * UI still stores the suffix so we need to join them
-     */
-    @SuppressWarnings("HttpUrlsUsage")
-    private static String joinAccountNameAndEndpoint(String accountName, String urlSuffix) {
-        return urlSuffix
-                .replace("http://", "https://")
-                .replace("https://", String.format("https://%s.", accountName));
     }
 
     private Utils() {
