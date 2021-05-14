@@ -18,7 +18,7 @@
         <changelist>9999-SNAPSHOT</changelist>
         <jenkins.version>2.277.2</jenkins.version>
         <java.level>8</java.level>
-        <windows-azure-storage.version>355.v4da08e72a251</windows-azure-storage.version>
+        <windows-azure-storage.version>356.vfa287acbfe71</windows-azure-storage.version>
     </properties>
 
     <licenses>
