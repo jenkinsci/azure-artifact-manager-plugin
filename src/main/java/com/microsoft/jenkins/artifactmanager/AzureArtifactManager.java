@@ -339,7 +339,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         return Utils.getBlobContainerReference(
                 accountInfo,
                 this.actualContainerName,
-                true
+                false
         );
     }
 
@@ -373,6 +373,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             serviceData.setFilePath(stashTempFile.getName());
             serviceData.setUploadType(UploadType.INDIVIDUAL);
 
+            // TODO rewrite to not use azure-storage plugin API like in artifacts
             UploadService uploadService = new UploadToBlobService(serviceData);
             try {
                 uploadService.execute();
