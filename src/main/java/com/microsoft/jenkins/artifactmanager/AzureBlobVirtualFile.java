@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -114,8 +115,8 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
                 BlobItemProperties properties = sm.getProperties();
                 OffsetDateTime lastModified = properties.getLastModified();
                 long lastModifiedMilli = lastModified.toInstant().toEpochMilli();
-                String fileName = sm.getName().replaceFirst(key + "/", "");
-                saved.put(stripTrailingSlash(fileName),
+                String fileName = stripBeginningSlash(sm.getName().replaceFirst(key, ""));
+                saved.put(fileName,
                         new CachedMetadata(properties.getContentLength(), lastModifiedMilli));
             }
         } catch (RuntimeException | URISyntaxException x) {
@@ -162,6 +163,14 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         return localKey;
     }
 
+    private String stripBeginningSlash(String string) {
+        String localKey = string;
+        if (string.startsWith("/")) {
+            localKey = localKey.substring(1);
+        }
+        return localKey;
+    }
+
     @NonNull
     @Override
     public URI toURI() {
@@ -204,9 +213,15 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         CacheFrame frame = findCacheFrame(keyS);
         if (frame != null) {
             LOGGER.log(Level.FINER, "cache hit on directory status of {0} / {1}", new Object[] {container, this.key});
-            String relSlash = key.substring(frame.root.length()); // "" or "sub/dir/"
-            boolean existsInCache = frame.children.keySet().stream().anyMatch(f -> f.equals(relSlash));
-            return !existsInCache;
+            String relSlash = stripTrailingSlash(keyS.substring(frame.root.length())); // "" or "sub/dir/"
+            Set<String> children = frame.children.keySet();
+            boolean existsInCache = children.stream().anyMatch(f -> f.startsWith(relSlash));
+            // if we don't know about it then it's not a directory
+            if (!existsInCache) {
+                return false;
+            }
+            // if it's not an exact file path then it's not a directory
+            return children.stream().noneMatch(f -> f.equals(relSlash));
         }
 
         LOGGER.log(Level.FINE, "checking directory status {0} / {1}", new Object[]{container, keyWithNoSlash});
@@ -232,7 +247,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
         CacheFrame frame = findCacheFrame(keyS);
         if (frame != null) {
-            String rel = key.substring(frame.root.length());
+            String rel = stripTrailingSlash(keyS.substring(frame.root.length()));
             CachedMetadata metadata = frame.children.get(rel);
             LOGGER.log(Level.FINER, "cache hit on file status of {0} / {1}", new Object[] {container, key});
             return metadata != null;
@@ -305,9 +320,10 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
     @Override
     public long length() throws IOException {
-        CacheFrame frame = findCacheFrame(key + "/");
+        String keyS = key + "/";
+        CacheFrame frame = findCacheFrame(keyS);
         if (frame != null) {
-            String rel = key.substring(frame.root.length());
+            String rel = stripTrailingSlash(keyS.substring(frame.root.length()));
             CachedMetadata metadata = frame.children.get(rel);
             LOGGER.log(Level.FINER, "cache hit on length of {0} / {1}", new Object[] {container, key});
             return metadata != null ? metadata.length : 0;
@@ -334,9 +350,10 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
     @Override
     public long lastModified() throws IOException {
-        CacheFrame frame = findCacheFrame(key + "/");
+        String keyS = key + "/";
+        CacheFrame frame = findCacheFrame(keyS);
         if (frame != null) {
-            String rel = key.substring(frame.root.length());
+            String rel = stripTrailingSlash(keyS.substring(frame.root.length()));
             CachedMetadata metadata = frame.children.get(rel);
             LOGGER.log(Level.FINER, "cache hit on lastModified of {0} / {1}", new Object[] {container, key});
             return metadata != null ? metadata.lastModified : 0;

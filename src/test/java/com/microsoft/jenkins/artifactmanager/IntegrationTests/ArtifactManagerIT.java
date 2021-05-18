@@ -166,9 +166,7 @@ public class ArtifactManagerIT extends IntegrationTest {
 
     @Test
     public void artifactStash() throws Throwable {
-        // TODO haven't managed to get weird characters test fully working, disabled for now
-        // TODO might work now?
-        ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), false, null);
+        ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), true, null);
     }
 
     private ArtifactManagerFactory getArtifactManagerFactory() {
