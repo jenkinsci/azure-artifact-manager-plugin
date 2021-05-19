@@ -125,7 +125,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 .act(new ContentTypeGuesser(new ArrayList<>(artifacts.keySet()), listener));
 
         try {
-            BlobContainerClient container = Utils.getBlobContainerReference(accountInfo, config.getContainer(), false);
+            BlobContainerClient container = Utils.getBlobContainerReference(accountInfo, config.getContainer(), true);
 
             for (Map.Entry<String, String> entry : contentTypes.entrySet()) {
                 String path = "artifacts/" + entry.getKey();
