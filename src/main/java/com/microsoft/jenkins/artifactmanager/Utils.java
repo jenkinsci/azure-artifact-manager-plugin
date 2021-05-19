@@ -9,6 +9,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.azure.storage.common.StorageSharedKeyCredential;
@@ -24,7 +25,6 @@ import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -32,6 +32,7 @@ import java.util.Map;
 
 public final class Utils {
     private static final String PREFIX_PATTERN = "^[a-z0-9A-Z]{1,30}/?$";
+    private static final int CONFLICT = 409;
 
     public static AzureArtifactConfig getArtifactConfig() {
         ArtifactManagerConfiguration artifactManagerConfiguration = ArtifactManagerConfiguration.get();
@@ -89,21 +90,30 @@ public final class Utils {
         return AzureStorageAccount.convertToStorageAccountInfo(accountCredentials);
     }
 
-    public static String generateBlobSASURL(
+    public static String getBlobUrl(
             StorageAccountInfo storageAccount,
             String containerName,
-            String blobName) throws Exception {
+            String blobName) {
 
         BlobServiceClient cloudStorageAccount = getCloudStorageAccount(storageAccount);
 
         // Create the blob client.
         BlobContainerClient container = cloudStorageAccount.getBlobContainerClient(containerName);
 
-        // At this point need to throw an error back since container itself did not exist.
-        if (!container.exists()) {
-            throw new Exception("WAStorageClient: generateBlobSASURL: Container " + containerName
-                    + " does not exist in storage account " + storageAccount.getStorageAccName());
-        }
+        BlobClient blob = container.getBlobClient(blobName);
+
+        return blob.getBlobUrl();
+    }
+
+    public static String generateBlobSASURL(
+            StorageAccountInfo storageAccount,
+            String containerName,
+            String blobName) {
+
+        BlobServiceClient cloudStorageAccount = getCloudStorageAccount(storageAccount);
+
+        // Create the blob client.
+        BlobContainerClient container = cloudStorageAccount.getBlobContainerClient(containerName);
 
         BlobClient blob = container.getBlobClient(blobName);
 
@@ -122,15 +132,23 @@ public final class Utils {
     public static BlobContainerClient getBlobContainerReference(StorageAccountInfo storageAccount,
                                                                 String containerName,
                                                                 boolean createIfNotExist)
-            throws URISyntaxException, IOException {
+            throws URISyntaxException {
 
         final BlobServiceClient serviceClient = getCloudStorageAccount(storageAccount);
 
         final BlobContainerClient container = serviceClient.getBlobContainerClient(containerName);
 
-        boolean cntExists = container.exists();
-        if (createIfNotExist && !cntExists) {
-            container.create();
+        if (createIfNotExist) {
+            if (!container.exists()) {
+                try {
+                    container.create();
+                } catch (BlobStorageException e) {
+                    // race condition from multiple builds trying to create the container
+                    if (e.getStatusCode() != CONFLICT) {
+                        throw e;
+                    }
+                }
+            }
         }
 
         return container;

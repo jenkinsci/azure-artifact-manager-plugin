@@ -20,7 +20,7 @@ public class AzureArtifactConfigTest {
 
 
     @Test
-    public void testContainerName() throws Exception {
+    public void testContainerName() {
 
         // checking for container name length of 3 characters
         assertEquals(FormValidation.ok(), descriptor.doCheckContainer("abc"));

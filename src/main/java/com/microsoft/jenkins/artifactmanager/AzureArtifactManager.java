@@ -125,7 +125,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 .act(new ContentTypeGuesser(new ArrayList<>(artifacts.keySet()), listener));
 
         try {
-            BlobContainerClient container = Utils.getBlobContainerReference(accountInfo, config.getContainer(), false);
+            BlobContainerClient container = Utils.getBlobContainerReference(accountInfo, config.getContainer(), true);
 
             for (Map.Entry<String, String> entry : contentTypes.entrySet()) {
                 String path = "artifacts/" + entry.getKey();
@@ -339,7 +339,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         return Utils.getBlobContainerReference(
                 accountInfo,
                 this.actualContainerName,
-                true
+                false
         );
     }
 
@@ -373,6 +373,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             serviceData.setFilePath(stashTempFile.getName());
             serviceData.setUploadType(UploadType.INDIVIDUAL);
 
+            // TODO rewrite to not use azure-storage plugin API like in artifacts
             UploadService uploadService = new UploadToBlobService(serviceData);
             try {
                 uploadService.execute();
@@ -401,6 +402,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         serviceData.setIncludeFilesPattern(stashes + name + Constants.TGZ_FILE_EXTENSION);
         serviceData.setFlattenDirectories(true);
 
+        workspace.mkdirs();
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
         try {
             downloadService.execute();
