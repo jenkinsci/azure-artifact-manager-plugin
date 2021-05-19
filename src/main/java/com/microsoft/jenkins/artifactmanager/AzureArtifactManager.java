@@ -402,6 +402,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         serviceData.setIncludeFilesPattern(stashes + name + Constants.TGZ_FILE_EXTENSION);
         serviceData.setFlattenDirectories(true);
 
+        workspace.mkdirs();
         DownloadService downloadService = new DownloadFromContainerService(serviceData);
         try {
             downloadService.execute();
