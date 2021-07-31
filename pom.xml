@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.277.x</artifactId>
-                <version>29</version>
+                <version>909.vf028101f1bfa</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>357.v36c07129d7d3</version>
+            <version>359.v09573e5ff73f</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
