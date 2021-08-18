@@ -106,7 +106,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     @Override
     public void onLoad(Run<?, ?> aBuild) {
         this.defaultKey = String.format(Constants.BUILD_PREFIX_FORMAT, aBuild.getParent().getFullName(),
-                aBuild.getNumber());
+                aBuild.getNumber()).replace("%2F", "/");
     }
 
     @Override
