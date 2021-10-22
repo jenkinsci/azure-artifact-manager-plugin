@@ -12,6 +12,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceAsyncClient;
+import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.BlobUrlParts;
 import com.azure.storage.blob.models.BlobHttpHeaders;
@@ -61,6 +62,7 @@ import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -227,6 +229,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     private static class UploadToBlobStorage extends MasterToSlaveFileCallable<Void> {
 
+        public static final int MAX_QUEUE_SIZE_IN_NETTY = 500;
+        public static final int TIMEOUT = 30;
         private final ProxyConfiguration proxy;
         private final String blobEndpoint;
         private final List<UploadObject> uploadObjects;
@@ -252,20 +256,43 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                     .buildAsyncClient();
         }
 
+        private BlobServiceClient getSynchronousBlobServiceClient(String sas) {
+            return new BlobServiceClientBuilder()
+                    .credential(new AzureSasCredential(sas))
+                    .httpClient(HttpClientRetriever.get(proxy))
+                    .endpoint(blobEndpoint)
+                    .buildClient();
+        }
+
         @Override
         public Void invoke(File f, VirtualChannel channel) {
-            for (UploadObject uploadObject : uploadObjects) {
-                BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
+            // fall back to sync client when more than 500 files are being uploaded
+            // likely less efficient although not really tested for scale yet.
+            // https://github.com/jenkinsci/azure-artifact-manager-plugin/issues/26
+            if (uploadObjects.size() < MAX_QUEUE_SIZE_IN_NETTY) {
+                for (UploadObject uploadObject : uploadObjects) {
+                    BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
 
-                BlobAsyncClient blobClient = getBlobClient(blobUrlParts);
+                    BlobAsyncClient blobClient = getBlobClient(blobUrlParts);
 
-                String file = new File(f, uploadObject.getName()).getAbsolutePath();
-                BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
-                        .setHeaders(getBlobHttpHeaders(uploadObject));
-                blobClient.uploadFromFileWithResponse(options)
-                        .doOnError(throwable -> listener.error("[AzureStorage] Failed to upload file %s, error: %s",
-                                file, throwable.getMessage()))
-                        .subscribe();
+                    String file = new File(f, uploadObject.getName()).getAbsolutePath();
+                    BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
+                            .setHeaders(getBlobHttpHeaders(uploadObject));
+                    blobClient.uploadFromFileWithResponse(options)
+                            .doOnError(throwable -> listener.error("[AzureStorage] Failed to upload file %s, error: %s",
+                                    file, throwable.getMessage()))
+                            .subscribe();
+                }
+            } else {
+                uploadObjects.parallelStream()
+                        .forEach(uploadObject -> {
+                            BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
+                            BlobClient blobClient = getSynchronousBlobClient(blobUrlParts);
+                            String file = new File(f, uploadObject.getName()).getAbsolutePath();
+                            BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
+                                    .setHeaders(getBlobHttpHeaders(uploadObject));
+                            blobClient.uploadFromFileWithResponse(options, Duration.ofSeconds(TIMEOUT), null);
+                        });
             }
             return null;
         }
@@ -277,6 +304,15 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             BlobContainerAsyncClient containerClient = blobServiceClient
                     .getBlobContainerAsyncClient(blobUrlParts.getBlobContainerName());
             return containerClient.getBlobAsyncClient(blobUrlParts.getBlobName());
+        }
+
+        private BlobClient getSynchronousBlobClient(BlobUrlParts blobUrlParts) {
+            String sas = blobUrlParts.getCommonSasQueryParameters().encode();
+            BlobServiceClient blobServiceClient = getSynchronousBlobServiceClient(sas);
+
+            BlobContainerClient containerClient = blobServiceClient
+                    .getBlobContainerClient(blobUrlParts.getBlobContainerName());
+            return containerClient.getBlobClient(blobUrlParts.getBlobName());
         }
 
         private BlobHttpHeaders getBlobHttpHeaders(UploadObject uploadObject) {
