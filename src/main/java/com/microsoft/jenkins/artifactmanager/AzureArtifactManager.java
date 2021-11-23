@@ -20,7 +20,6 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.options.BlobUploadFromFileOptions;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
-import com.google.common.collect.Lists;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
 import com.microsoftopentechnologies.windowsazurestorage.service.DownloadFromContainerService;
@@ -64,6 +63,7 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -424,7 +424,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private String excludeFilesAndStash(String excludes, String stashFile) {
-        List<String> strings = Lists.asList(excludes, new String[]{stashFile});
+        List<String> strings = Arrays.asList(excludes, stashFile);
         return String.join(Constants.COMMA, strings);
     }
 
