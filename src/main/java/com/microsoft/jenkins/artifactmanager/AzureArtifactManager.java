@@ -53,8 +53,8 @@ import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -385,8 +385,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void stash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
-                      @Nonnull EnvVars env, @Nonnull TaskListener listener, @CheckForNull String includes,
+    public void stash(@NonNull String name, @NonNull FilePath workspace, @NonNull Launcher launcher,
+                      @NonNull EnvVars env, @NonNull TaskListener listener, @CheckForNull String includes,
                       @CheckForNull String excludes, boolean useDefaultExcludes, boolean allowEmpty) throws
             IOException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
@@ -429,8 +429,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void unstash(@Nonnull String name, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
-                        @Nonnull EnvVars env, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public void unstash(@NonNull String name, @NonNull FilePath workspace, @NonNull Launcher launcher,
+                        @NonNull EnvVars env, @NonNull TaskListener listener) throws IOException, InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         DownloadServiceData serviceData = new DownloadServiceData(build, workspace, launcher, listener, accountInfo);
         serviceData.setContainerName(getActualContainerName(listener));
@@ -460,7 +460,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void clearAllStashes(@Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public void clearAllStashes(@NonNull TaskListener listener) throws IOException, InterruptedException {
         String virtualPath = getVirtualPath(Constants.STASHES_PATH);
 
         try {
@@ -473,7 +473,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     @Override
-    public void copyAllArtifactsAndStashes(@Nonnull Run<?, ?> to, @Nonnull TaskListener listener) throws IOException {
+    public void copyAllArtifactsAndStashes(@NonNull Run<?, ?> to, @NonNull TaskListener listener) throws IOException {
         ArtifactManager artifactManager = to.pickArtifactManager();
         if (!(artifactManager instanceof AzureArtifactManager)) {
             throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass()
