@@ -17,6 +17,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.BlobUrlParts;
 import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobUploadFromFileOptions;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
@@ -352,7 +353,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException, InterruptedException {
         BlobContainerClient container = getContainer();
-        PagedIterable<BlobItem> listBlobItems = container.listBlobsByHierarchy(prefix);
+        ListBlobsOptions listBlobsOptions = new ListBlobsOptions().setPrefix(prefix);
+        PagedIterable<BlobItem> listBlobItems = container.listBlobs(listBlobsOptions, null);
         return deleteBlobs(container, listBlobItems);
     }
 
