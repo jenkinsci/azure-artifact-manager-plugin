@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.18</version>
+        <version>4.49</version>
         <relativePath/>
     </parent>
     <artifactId>azure-artifact-manager</artifactId>
@@ -16,8 +16,7 @@
 
     <properties>
         <changelist>9999-SNAPSHOT</changelist>
-        <jenkins.version>2.277.2</jenkins.version>
-        <java.level>8</java.level>
+        <jenkins.version>2.346.3</jenkins.version>
     </properties>
 
     <licenses>
@@ -43,8 +42,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.277.x</artifactId>
-                <version>909.vf028101f1bfa</version>
+                <artifactId>bom-2.346.x</artifactId>
+                <version>1654.vcb_69d035fa_20</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -55,7 +54,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>359.v09573e5ff73f</version>
+            <version>380.va3a027b784f4</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -70,7 +69,7 @@
         <dependency>
             <groupId>org.jenkins-ci.test</groupId>
             <artifactId>docker-fixtures</artifactId>
-            <version>1.11</version>
+            <version>166.v912b_95083ffe</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -117,7 +116,7 @@
 
     <url>https://github.com/jenkinsci/azure-artifact-manager-plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+        <connection>scm:git:https://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
         <tag>${scmTag}</tag>

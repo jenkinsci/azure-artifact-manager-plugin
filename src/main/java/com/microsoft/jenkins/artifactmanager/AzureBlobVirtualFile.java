@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -107,7 +106,6 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         Map<String, CachedMetadata> saved = new HashMap<>();
         try {
             StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-            Objects.requireNonNull(this.container, "Container must not be null");
             BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
                     false);
             ListBlobsOptions listBlobsOptions = new ListBlobsOptions()
