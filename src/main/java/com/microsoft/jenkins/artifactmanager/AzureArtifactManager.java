@@ -78,7 +78,7 @@ import static com.microsoft.jenkins.artifactmanager.Utils.generateExpiryDate;
 @Restricted(NoExternalUse.class)
 public final class AzureArtifactManager extends ArtifactManager implements StashManager.StashAwareArtifactManager {
     private static final Logger LOGGER = Logger.getLogger(ArtifactManager.class.getName());
-    private final Run<?, ?> build;
+    private transient Run<?, ?> build;
     private final AzureArtifactConfig config;
     private String actualContainerName;
 
@@ -89,7 +89,6 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         String prefix = config.getPrefix();
         checkConfig(containerName, prefix);
 
-        this.build = build;
         this.config = config;
         onLoad(build);
     }
@@ -108,8 +107,19 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     @Override
     public void onLoad(Run<?, ?> aBuild) {
+        this.build = aBuild;
         this.defaultKey = String.format(Constants.BUILD_PREFIX_FORMAT, aBuild.getParent().getFullName(),
                 aBuild.getNumber()).replace("%2F", "/");
+
+        if (this.actualContainerName == null) {
+            try {
+                EnvVars envVars = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
+                this.actualContainerName = Utils
+                        .replaceMacro(Util.fixNull(config.getContainer()), envVars, Locale.ENGLISH);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
