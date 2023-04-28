@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.49</version>
+        <version>4.62</version>
         <relativePath/>
     </parent>
     <artifactId>azure-artifact-manager</artifactId>
@@ -15,8 +15,8 @@
     <description>A Jenkins plugin to keep artifacts and Pipeline stashes in Azure storage.</description>
 
     <properties>
-        <changelist>9999-SNAPSHOT</changelist>
-        <jenkins.version>2.346.3</jenkins.version>
+        <changelist>999999-SNAPSHOT</changelist>
+        <jenkins.version>2.361.4</jenkins.version>
     </properties>
 
     <licenses>
@@ -26,24 +26,12 @@
         </license>
     </licenses>
 
-    <developers>
-        <developer>
-            <id>xuzhang</id>
-            <name>Xu Zhang</name>
-            <email>xuzhang3@microsoft.com</email>
-        </developer>
-        <developer>
-            <id>timja</id>
-            <name>Tim Jacomb</name>
-        </developer>
-    </developers>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
-                <version>1763.v092b_8980a_f5e</version>
+                <artifactId>bom-2.361.x</artifactId>
+                <version>2025.v816d28f1e04f</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -54,7 +42,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>380.va3a027b784f4</version>
+            <version>386.v673495b0a5de</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -145,7 +133,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.45.1</version>
+                        <version>10.9.3</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -159,7 +147,6 @@
                 </executions>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                 </configuration>
             </plugin>
