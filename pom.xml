@@ -12,7 +12,6 @@
     <version>${changelist}</version>
     <packaging>hpi</packaging>
     <name>Azure Artifact Manager plugin</name>
-    <description>A Jenkins plugin to keep artifacts and Pipeline stashes in Azure storage.</description>
 
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
