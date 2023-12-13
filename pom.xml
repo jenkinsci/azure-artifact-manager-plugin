@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>386.v673495b0a5de</version>
+            <version>414.v87922b9c52e2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
