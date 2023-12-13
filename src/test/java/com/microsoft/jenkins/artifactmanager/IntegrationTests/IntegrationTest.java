@@ -27,7 +27,6 @@ public class IntegrationTest {
         public final String azureStorageAccountKey2;
 
         public final String blobURL;
-        public final String cdnURL;
         public final StorageAccountInfo sampleStorageAccount;
         public static final int TOTAL_FILES = 50;
         public HashMap<String, File> uploadFileList = new HashMap<>();
@@ -42,8 +41,7 @@ public class IntegrationTest {
             azureStorageAccountKey2 = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_KEY2");
 
             blobURL = Utils.DEF_BLOB_URL;
-            CdnURL = "";
-            sampleStorageAccount = new StorageAccountInfo(azureStorageAccountName, azureStorageAccountKey1, blobURL, cdnURL);
+            sampleStorageAccount = new StorageAccountInfo(azureStorageAccountName, azureStorageAccountKey1, blobURL, "");
             containerName = name;
             shareName = name;
         }
