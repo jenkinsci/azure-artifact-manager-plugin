@@ -12,11 +12,10 @@
     <version>${changelist}</version>
     <packaging>hpi</packaging>
     <name>Azure Artifact Manager plugin</name>
-    <description>A Jenkins plugin to keep artifacts and Pipeline stashes in Azure storage.</description>
 
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
-        <jenkins.version>2.361.4</jenkins.version>
+        <jenkins.version>2.387.3</jenkins.version>
     </properties>
 
     <licenses>
@@ -30,8 +29,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.361.x</artifactId>
-                <version>2102.v854b_fec19c92</version>
+                <artifactId>bom-2.387.x</artifactId>
+                <version>2543.vfb_1a_5fb_9496d</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -42,7 +41,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>386.v673495b0a5de</version>
+            <version>414.v87922b9c52e2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>

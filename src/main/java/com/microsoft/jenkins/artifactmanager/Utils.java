@@ -102,7 +102,13 @@ public final class Utils {
 
         BlobClient blob = container.getBlobClient(blobName);
 
-        return blob.getBlobUrl();
+        // Check if CDN endpoint exists and use CDN URL, otherwise use blob URL
+        String cdnEndpoint = storageAccount.getCdnEndPointURL();
+        if (!StringUtils.isBlank(cdnEndpoint)) {
+            return (cdnEndpoint + "/" + blob.getContainerName() + "/" + blob.getBlobName());
+        } else {
+            return blob.getBlobUrl();
+        }
     }
 
     public static String generateBlobSASURL(

@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-    Jenkins Azure artifact manager plugin
+    Jenkins Azure Artifact Manager plugin enables keeping artifacts and Pipeline stashes in Azure Blob storage.
 </div>

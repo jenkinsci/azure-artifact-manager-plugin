@@ -41,7 +41,7 @@ public class IntegrationTest {
             azureStorageAccountKey2 = TestEnvironment.loadFromEnv("AZURE_STORAGE_TEST_STORAGE_ACCOUNT_KEY2");
 
             blobURL = Utils.DEF_BLOB_URL;
-            sampleStorageAccount = new StorageAccountInfo(azureStorageAccountName, azureStorageAccountKey1, blobURL);
+            sampleStorageAccount = new StorageAccountInfo(azureStorageAccountName, azureStorageAccountKey1, blobURL, "");
             containerName = name;
             shareName = name;
         }
