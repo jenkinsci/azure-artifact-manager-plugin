@@ -49,12 +49,15 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
 
     private final String container;
     private final String key;
+
+    private Boolean disableExternalUrl;
     private final transient Run<?, ?> build;
 
-    public AzureBlobVirtualFile(String container, String key, Run<?, ?> build) {
+    public AzureBlobVirtualFile(String container, String key, Boolean disableExternalUrl, Run<?, ?> build) {
         this.container = container;
         this.key = key;
         this.build = build;
+        this.disableExternalUrl = disableExternalUrl;
     }
 
     public String getContainer() {
@@ -185,20 +188,24 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @CheckForNull
     @Override
     public URL toExternalURL() throws IOException {
-        StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        String sas;
-        try {
-            sas = Utils.generateBlobSASURL(accountInfo, this.container, this.key);
-        } catch (Exception e) {
-            throw new IOException(e);
+        if (this.disableExternalUrl == null || !this.disableExternalUrl) {
+            StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
+            String sas;
+            try {
+                sas = Utils.generateBlobSASURL(accountInfo, this.container, this.key);
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+            return new URL(toURI() + "?" + sas);
+        } else {
+            return null;
         }
-        return new URL(toURI() + "?" + sas);
     }
 
     @Override
     public VirtualFile getParent() {
         return new AzureBlobVirtualFile(this.container, this.key.replaceFirst("/[^/]+$", Constants.EMPTY_STRING),
-                this.build);
+            this.disableExternalUrl, this.build);
     }
 
     @Override
@@ -283,7 +290,8 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
                     .map(f -> f.substring(relSlash.length()).replaceFirst("/.+", ""))
                     .distinct() // ignore duplicates if have multiple files under one direct subdir
                     // direct children
-                    .map(simple -> new AzureBlobVirtualFile(this.container, keyS + simple, this.build))
+                    .map(simple -> new AzureBlobVirtualFile(this.container, keyS + simple,
+                        this.disableExternalUrl, this.build))
                     .toArray(VirtualFile[]::new);
             return virtualFiles;
         }
@@ -306,7 +314,8 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         PagedIterable<BlobItem> blobItems = blobContainerReference.listBlobsByHierarchy(keys);
         List<VirtualFile> files = new ArrayList<>();
         for (BlobItem blobItem : blobItems) {
-            files.add(new AzureBlobVirtualFile(this.container, stripTrailingSlash(blobItem.getName()), this.build));
+            files.add(new AzureBlobVirtualFile(this.container, stripTrailingSlash(blobItem.getName()),
+                this.disableExternalUrl, this.build));
         }
         return files;
     }
@@ -315,7 +324,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @Override
     public VirtualFile child(@NonNull String name) {
         String joinedKey = stripTrailingSlash(this.key) + Constants.FORWARD_SLASH + name;
-        return new AzureBlobVirtualFile(this.container, joinedKey, build);
+        return new AzureBlobVirtualFile(this.container, joinedKey, this.disableExternalUrl, build);
     }
 
     @Override

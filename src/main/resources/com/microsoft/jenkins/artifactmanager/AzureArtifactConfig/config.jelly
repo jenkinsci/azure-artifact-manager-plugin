@@ -14,5 +14,8 @@
         <f:entry title="${%Prefix_title}" field="prefix">
             <f:textbox/>
         </f:entry>
+        <f:entry title="${%DisableExternalUrl_title}" field="disableExternalUrl">
+            <f:checkbox/>
+        </f:entry>
     </f:section>
 </j:jelly>

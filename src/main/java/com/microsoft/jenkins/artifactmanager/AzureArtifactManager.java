@@ -397,7 +397,8 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
 
     @Override
     public VirtualFile root() {
-        return new AzureBlobVirtualFile(this.actualContainerName, getVirtualPath("artifacts"), build);
+        return new AzureBlobVirtualFile(this.actualContainerName, getVirtualPath("artifacts"),
+            this.config.getDisableExternalUrl(), build);
     }
 
     @Override
