@@ -188,7 +188,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     @CheckForNull
     @Override
     public URL toExternalURL() throws IOException {
-        if (this.disableExternalUrl == null || !this.disableExternalUrl) {
+        if (!this.disableExternalUrl) {
             StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
             String sas;
             try {
