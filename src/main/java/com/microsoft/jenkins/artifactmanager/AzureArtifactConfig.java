@@ -67,7 +67,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
     }
 
     @DataBoundSetter
-    public void setDisableExternalUrl(Boolean disableExternalUrl) {
+    public void setDisableExternalUrl(boolean disableExternalUrl) {
         this.disableExternalUrl = disableExternalUrl;
     }
 
