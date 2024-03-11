@@ -53,7 +53,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     private Boolean disableExternalUrl;
     private final transient Run<?, ?> build;
 
-    public AzureBlobVirtualFile(String container, String key, Boolean disableExternalUrl, Run<?, ?> build) {
+    public AzureBlobVirtualFile(String container, String key, boolean disableExternalUrl, Run<?, ?> build) {
         this.container = container;
         this.key = key;
         this.build = build;
