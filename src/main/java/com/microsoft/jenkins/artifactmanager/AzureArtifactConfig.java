@@ -62,7 +62,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
         this.prefix = prefix;
     }
 
-    public Boolean getDisableExternalUrl() {
+    public boolean getDisableExternalUrl() {
         return disableExternalUrl;
     }
 
