@@ -34,7 +34,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
     private String storageCredentialId;
     private String container;
     private String prefix;
-    private Boolean disableExternalUrl;
+    private boolean disableExternalUrl;
 
     public AzureArtifactConfig() {
     }
