@@ -79,11 +79,11 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
         uploadFile(tempFile, TEMP_FILE_RELATIVE_PATH);
         uploadFile(subTempFile, SUB_TEMP_FILE_RELATIVE_PATH);
 
-        root = new AzureBlobVirtualFile(containerName, ROOT_FOLDER_NAME, run);
-        subDir = new AzureBlobVirtualFile(containerName, SUB_FOLDER_RELATIVE_PATH, run);
-        temp = new AzureBlobVirtualFile(containerName, TEMP_FILE_RELATIVE_PATH, run);
-        subTemp = new AzureBlobVirtualFile(containerName, SUB_TEMP_FILE_RELATIVE_PATH, run);
-        missing = new AzureBlobVirtualFile(containerName, "missing", run);
+        root = new AzureBlobVirtualFile(containerName, ROOT_FOLDER_NAME, false, run);
+        subDir = new AzureBlobVirtualFile(containerName, SUB_FOLDER_RELATIVE_PATH, false, run);
+        temp = new AzureBlobVirtualFile(containerName, TEMP_FILE_RELATIVE_PATH, false, run);
+        subTemp = new AzureBlobVirtualFile(containerName, SUB_TEMP_FILE_RELATIVE_PATH, false, run);
+        missing = new AzureBlobVirtualFile(containerName, "missing", false, run);
     }
 
     private void uploadFile(File file, String cloudFileName) {

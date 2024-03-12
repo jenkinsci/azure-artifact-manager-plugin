@@ -34,6 +34,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
     private String storageCredentialId;
     private String container;
     private String prefix;
+    private boolean disableExternalUrl;
 
     public AzureArtifactConfig() {
     }
@@ -59,6 +60,15 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
     @DataBoundSetter
     public void setPrefix(String prefix) {
         this.prefix = prefix;
+    }
+
+    public boolean getDisableExternalUrl() {
+        return disableExternalUrl;
+    }
+
+    @DataBoundSetter
+    public void setDisableExternalUrl(boolean disableExternalUrl) {
+        this.disableExternalUrl = disableExternalUrl;
     }
 
     public String getStorageCredentialId() {
