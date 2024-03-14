@@ -245,7 +245,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private static class UploadToBlobStorage extends MasterToSlaveFileCallable<Void> {
 
         public static final int MAX_QUEUE_SIZE_IN_NETTY = 500;
-        public static final int TIMEOUT = 30;
+        public static final int TIMEOUT = 600;
         private final ProxyConfiguration proxy;
         private final String blobEndpoint;
         private final List<UploadObject> uploadObjects;
