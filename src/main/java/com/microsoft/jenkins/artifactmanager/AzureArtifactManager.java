@@ -62,6 +62,7 @@ import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,9 +75,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-// For Duration (if using Azure SDK methods)
-import java.time.Duration;
 
 import static com.microsoft.jenkins.artifactmanager.Utils.generateExpiryDate;
 
