@@ -66,6 +66,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -285,6 +288,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
             // likely less efficient although not really tested for scale yet.
             // https://github.com/jenkinsci/azure-artifact-manager-plugin/issues/26
             if (uploadObjects.size() < MAX_QUEUE_SIZE_IN_NETTY) {
+                CountDownLatch latch = new CountDownLatch(uploadObjects.size());
                 for (UploadObject uploadObject : uploadObjects) {
                     BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
 
@@ -296,18 +300,39 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                     blobClient.uploadFromFileWithResponse(options)
                             .doOnError(throwable -> listener.error("[AzureStorage] Failed to upload file %s, error: %s",
                                     file, throwable.getMessage()))
+                            .doOnSuccess(response -> latch.countDown())
                             .subscribe();
                 }
+
+                try {
+                    if (!latch.await(Math.max(TIMEOUT, TIMEOUT * uploadObjects.size()), TimeUnit.SECONDS)) {
+                        listener.error("[AzureStorage] Timeout occurred while uploading files");
+                    }
+                } catch (InterruptedException e) {
+                    listener.error("[AzureStorage] Upload process was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
             } else {
-                uploadObjects.parallelStream()
+                try {
+                    uploadObjects.parallelStream()
                         .forEach(uploadObject -> {
                             BlobUrlParts blobUrlParts = BlobUrlParts.parse(uploadObject.getUrl());
                             BlobClient blobClient = getSynchronousBlobClient(blobUrlParts);
                             String file = new File(f, uploadObject.getName()).getAbsolutePath();
                             BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(file)
                                     .setHeaders(getBlobHttpHeaders(uploadObject));
-                            blobClient.uploadFromFileWithResponse(options, Duration.ofSeconds(TIMEOUT), null);
+
+                            try {
+                                blobClient.uploadFromFileWithResponse(options, Duration.ofSeconds(TIMEOUT), null);
+                            } catch (Exception e) {
+                                listener.error("[AzureStorage] Failed to upload file %s, error: %s",
+                                    file, e.getMessage());
+                                throw new CompletionException(e);
+                            }
                         });
+                } catch (CompletionException e) {
+                    listener.error("[AzureStorage] One or more file uploads failed");
+                }
             }
             return null;
         }
