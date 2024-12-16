@@ -379,7 +379,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             BlobClient blockBlobReference = blobContainerReference.getBlobClient(this.key);
             BlobProperties properties = blockBlobReference.getProperties();
             OffsetDateTime lastModified = properties.getLastModified();
-            return lastModified == null ? 0 : lastModified.toEpochSecond();
+            return lastModified == null ? 0 : lastModified.toInstant().toEpochMilli();
         } catch (URISyntaxException e) {
             throw new IOException(e);
         } catch (BlobStorageException e) {
