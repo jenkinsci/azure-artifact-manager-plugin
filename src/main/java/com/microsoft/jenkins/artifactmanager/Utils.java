@@ -23,7 +23,7 @@ import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
