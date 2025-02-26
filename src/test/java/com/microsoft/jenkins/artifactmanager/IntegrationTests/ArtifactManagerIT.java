@@ -151,8 +151,8 @@ public class ArtifactManagerIT extends IntegrationTest {
             if (!Boolean.TRUE.equals(blobItem.isPrefix())) {
                 BlobClient blobClient = testEnv.container.getBlobClient(blobItem.getName());
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
-                blobClient.download(output);
-                String downloadedContent = output.toString(StandardCharsets.UTF_8.name());
+                blobClient.downloadStream(output);
+                String downloadedContent = output.toString(StandardCharsets.UTF_8);
                 File temp = testEnv.uploadFileList.get(downloadedContent);
                 String tempContent = FileUtils.readFileToString(temp, "utf-8");
                 //check for filenames

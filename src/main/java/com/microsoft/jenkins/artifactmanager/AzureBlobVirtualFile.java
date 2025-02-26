@@ -25,6 +25,7 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serial;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -42,6 +43,7 @@ import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
+    @Serial
     private static final long serialVersionUID = 9054620703341308471L;
 
     private static final Logger LOGGER = Logger.getLogger(AzureBlobVirtualFile.class.getName());
@@ -122,7 +124,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
                 saved.put(fileName,
                         new CachedMetadata(properties.getContentLength(), lastModifiedMilli));
             }
-        } catch (RuntimeException | URISyntaxException x) {
+        } catch (RuntimeException x) {
             throw new IOException(x);
         }
         stack.push(new CacheFrame(stripTrailingSlash(key) + "/", saved));
@@ -209,7 +211,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     }
 
     @Override
-    public boolean isDirectory() throws IOException {
+    public boolean isDirectory() {
         String keyWithNoSlash = stripTrailingSlash(this.key);
 
         if (keyWithNoSlash.endsWith("/*view*")) {
@@ -234,18 +236,14 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         LOGGER.log(Level.FINE, "checking directory status {0} / {1}", new Object[]{container, keyWithNoSlash});
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        try {
-            BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
-                    false);
-            Iterator<BlobItem> iterator = blobContainerReference.listBlobsByHierarchy(keyS).iterator();
-            return iterator.hasNext();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+        BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
+                false);
+        Iterator<BlobItem> iterator = blobContainerReference.listBlobsByHierarchy(keyS).iterator();
+        return iterator.hasNext();
     }
 
     @Override
-    public boolean isFile() throws IOException {
+    public boolean isFile() {
         String keyS = key + "/";
 
         if (keyS.endsWith("/*view*/")) {
@@ -261,24 +259,20 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         }
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        try {
-            BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
-                    false);
-            BlobClient blockBlobReference = blobContainerReference.getBlobClient(key);
-            return blockBlobReference.exists();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+        BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
+                false);
+        BlobClient blockBlobReference = blobContainerReference.getBlobClient(key);
+        return blockBlobReference.exists();
     }
 
     @Override
-    public boolean exists() throws IOException {
+    public boolean exists() {
         return isDirectory() || isFile();
     }
 
     @NonNull
     @Override
-    public VirtualFile[] list() throws IOException {
+    public VirtualFile[] list() {
         String keyS = key + "/";
         CacheFrame frame = findCacheFrame(keyS);
         if (frame != null) {
@@ -300,13 +294,9 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
         String keys = stripTrailingSlash(this.key) + Constants.FORWARD_SLASH;
 
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        try {
-            BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
-                    false);
-            list = listBlobsFromPrefix(keys, blobContainerReference).toArray(new VirtualFile[0]);
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+        BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
+                false);
+        list = listBlobsFromPrefix(keys, blobContainerReference).toArray(new VirtualFile[0]);
         return list;
     }
 
@@ -347,8 +337,6 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             BlobProperties properties = blobClient.getProperties();
 
             return properties.getBlobSize();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
         } catch (BlobStorageException e) {
             if (e.getStatusCode() == NOT_FOUND) {
                 return 0;
@@ -380,8 +368,6 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             BlobProperties properties = blockBlobReference.getProperties();
             OffsetDateTime lastModified = properties.getLastModified();
             return lastModified == null ? 0 : lastModified.toInstant().toEpochMilli();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
         } catch (BlobStorageException e) {
             if (e.getStatusCode() == NOT_FOUND) {
                 return 0;
@@ -392,7 +378,7 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
     }
 
     @Override
-    public boolean canRead() throws IOException {
+    public boolean canRead() {
         return true;
     }
 
@@ -405,13 +391,9 @@ public class AzureBlobVirtualFile extends AzureAbstractVirtualFile {
             throw new FileNotFoundException("Cannot open it because it is not a file.");
         }
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        try {
-            BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
-                    false);
-            BlobClient blockBlobReference = blobContainerReference.getBlobClient(this.key);
-            return blockBlobReference.openInputStream();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+        BlobContainerClient blobContainerReference = Utils.getBlobContainerReference(accountInfo, this.container,
+                false);
+        BlobClient blockBlobReference = blobContainerReference.getBlobClient(this.key);
+        return blockBlobReference.openInputStream();
     }
 }
