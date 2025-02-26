@@ -92,7 +92,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void exists() throws IOException {
+    public void exists() {
         assertTrue(root.exists());
         assertTrue(subDir.exists());
         assertTrue(temp.exists());
@@ -116,7 +116,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void isDirectory() throws IOException {
+    public void isDirectory() {
         assertTrue(root.isDirectory());
         assertTrue(subDir.isDirectory());
         assertFalse(temp.isDirectory());
@@ -125,7 +125,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void isFile() throws IOException {
+    public void isFile() {
         assertTrue(temp.isFile());
         assertTrue(subTemp.isFile());
         assertFalse(missing.isFile());
@@ -150,7 +150,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void list() throws IOException {
+    public void list() {
         VirtualFile[] list = root.list();
         assertArrayEquals(new AzureBlobVirtualFile[]{temp, subDir}, list);
         assertArrayEquals(new AzureBlobVirtualFile[0], missing.list());

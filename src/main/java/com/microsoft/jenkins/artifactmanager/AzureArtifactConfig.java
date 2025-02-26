@@ -9,6 +9,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractDescribableImpl;
@@ -25,11 +26,13 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 
 @Extension
 public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactConfig> implements Serializable {
+    @Serial
     private static final long serialVersionUID = -3283542207832596121L;
     private String storageCredentialId;
     private String container;
@@ -91,6 +94,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
             return super.configure(req, json);
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return Constants.AZURE_STORAGE_DISPLAY_NAME;
@@ -111,7 +115,7 @@ public class AzureArtifactConfig extends AbstractDescribableImpl<AzureArtifactCo
             return result
                     .includeEmptyValue()
                     .includeMatchingAs(
-                            ACL.SYSTEM,
+                            ACL.SYSTEM2,
                             item,
                             AzureStorageAccount.class,
                             Collections.emptyList(),

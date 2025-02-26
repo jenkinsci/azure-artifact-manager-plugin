@@ -9,7 +9,10 @@ import jenkins.util.VirtualFile;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
+import java.io.Serial;
+
 @Restricted(NoExternalUse.class)
 public abstract class AzureAbstractVirtualFile extends VirtualFile {
+    @Serial
     private static final long serialVersionUID = 232262110935432273L;
 }

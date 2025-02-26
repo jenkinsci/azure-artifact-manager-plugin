@@ -58,8 +58,8 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
-import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -187,6 +187,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private static class ContentTypeGuesser extends MasterToSlaveFileCallable<Map<String, String>> {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         private final Collection<String> relPaths;
@@ -381,16 +382,11 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         String virtualPath = getVirtualPath("");
         // TODO check if able to delete artifacts
 
-        try {
-            int count = deleteWithPrefix(virtualPath);
-            return count > 0;
-        } catch (URISyntaxException e) {
-            LOGGER.severe(Messages.AzureArtifactManager_delete_fail(e));
-            throw new IOException(e);
-        }
+        int count = deleteWithPrefix(virtualPath);
+        return count > 0;
     }
 
-    private int deleteWithPrefix(String prefix) throws IOException, URISyntaxException, InterruptedException {
+    private int deleteWithPrefix(String prefix) throws IOException, InterruptedException {
         BlobContainerClient container = getContainer();
         ListBlobsOptions listBlobsOptions = new ListBlobsOptions().setPrefix(prefix);
         PagedIterable<BlobItem> listBlobItems = container.listBlobs(listBlobsOptions, null);
@@ -407,7 +403,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     }
 
     private BlobContainerClient getContainer() throws IOException,
-            URISyntaxException, InterruptedException {
+            InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
         if (StringUtils.isEmpty(this.actualContainerName)) {
             this.actualContainerName = getActualContainerName(new LogTaskListener(LOGGER, Level.INFO));
@@ -505,30 +501,24 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     public void clearAllStashes(@NonNull TaskListener listener) throws IOException, InterruptedException {
         String virtualPath = getVirtualPath(Constants.STASHES_PATH);
 
-        try {
-            int count = deleteWithPrefix(virtualPath);
-            listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, this.actualContainerName));
-        } catch (URISyntaxException e) {
-            listener.getLogger().println(Messages.AzureArtifactManager_clear_stash_fail(e));
-            throw new IOException(e);
-        }
+        int count = deleteWithPrefix(virtualPath);
+        listener.getLogger().println(Messages.AzureArtifactManager_clear_stash(count, this.actualContainerName));
     }
 
     @Override
     public void copyAllArtifactsAndStashes(@NonNull Run<?, ?> to, @NonNull TaskListener listener) throws IOException {
         ArtifactManager artifactManager = to.pickArtifactManager();
-        if (!(artifactManager instanceof AzureArtifactManager)) {
+        if (!(artifactManager instanceof AzureArtifactManager azureArtifactManager)) {
             throw new AbortException(Messages.AzureArtifactManager_cannot_copy(to, artifactManager.getClass()
                     .getName()));
         }
 
-        AzureArtifactManager azureArtifactManager = (AzureArtifactManager) artifactManager;
         try {
             int artifactsCount = copyBlobsWithPrefix(Constants.ARTIFACTS_PATH, azureArtifactManager.defaultKey);
             int stashesCount = copyBlobsWithPrefix(Constants.STASHES_PATH, azureArtifactManager.defaultKey);
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all(artifactsCount, stashesCount,
                     this.defaultKey, azureArtifactManager.defaultKey));
-        } catch (URISyntaxException | InterruptedException e) {
+        } catch (InterruptedException e) {
             listener.getLogger().println(Messages.AzureArtifactManager_copy_all_fail(e));
             throw new IOException(e);
         }
@@ -559,7 +549,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         return count;
     }
 
-    private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException, URISyntaxException,
+    private int copyBlobsWithPrefix(String prefix, String toKey) throws IOException,
             InterruptedException {
         BlobContainerClient container = getContainer();
         String sourcePath = getVirtualPath(prefix);

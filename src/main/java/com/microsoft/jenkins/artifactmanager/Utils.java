@@ -25,7 +25,6 @@ import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.apache.commons.lang.StringUtils;
 
-import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.Map;
@@ -137,8 +136,7 @@ public final class Utils {
 
     public static BlobContainerClient getBlobContainerReference(StorageAccountInfo storageAccount,
                                                                 String containerName,
-                                                                boolean createIfNotExist)
-            throws URISyntaxException {
+                                                                boolean createIfNotExist) {
 
         final BlobServiceClient serviceClient = getCloudStorageAccount(storageAccount);
 
