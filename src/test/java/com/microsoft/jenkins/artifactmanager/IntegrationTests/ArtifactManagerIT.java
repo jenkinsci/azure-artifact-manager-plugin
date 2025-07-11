@@ -166,7 +166,7 @@ public class ArtifactManagerIT extends IntegrationTest {
 
     @Test
     public void artifactStash() throws Throwable {
-        ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), true, null);
+        ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), true);
     }
 
     private ArtifactManagerFactory getArtifactManagerFactory() {
