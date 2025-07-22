@@ -47,14 +47,10 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <!-- TODO: remove -->
-            <version>1377.vf606866f592b_</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <!-- TODO: remove -->
-            <version>1377.vf606866f592b_</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
