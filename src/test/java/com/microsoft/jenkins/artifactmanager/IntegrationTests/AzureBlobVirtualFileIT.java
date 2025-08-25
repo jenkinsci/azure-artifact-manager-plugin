@@ -9,9 +9,9 @@ import hudson.model.FreeStyleProject;
 import jenkins.util.VirtualFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,14 +19,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AzureBlobVirtualFileIT extends IntegrationTest {
+class AzureBlobVirtualFileIT extends IntegrationTest {
+
     private AzureBlobVirtualFile root, subDir, temp, subTemp, missing;
     private File workspaceDir;
 
@@ -39,12 +40,12 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     private static final String SUB_FOLDER_RELATIVE_PATH = "test/sub";
     private static final String ROOT_FOLDER_NAME = "test";
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void beforeEach() throws Exception {
         FreeStyleProject project = j.createFreeStyleProject();
         FreeStyleBuild run = project.scheduleBuild2(0).get();
 
-        String containerName = "testvirtualfile" + TestEnvironment.GenerateRandomString(15);
+        String containerName = "testvirtualfile" + TestEnvironment.generateRandomString(15);
 
         workspaceDir = new File(containerName);
 
@@ -92,7 +93,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void exists() {
+    void exists() {
         assertTrue(root.exists());
         assertTrue(subDir.exists());
         assertTrue(temp.exists());
@@ -101,7 +102,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void child() throws IOException {
+    void child() throws IOException {
         assertTrue(root.child(SUB_FOLDER_NAME).exists());
         VirtualFile child = subDir.child(SUB_TEMP_FILE_NAME);
         assertTrue(child.exists());
@@ -109,14 +110,14 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void getName() {
+    void getName() {
         assertEquals("missing", missing.getName());
         assertEquals(SUB_TEMP_FILE_NAME, subTemp.getName());
         assertEquals(SUB_FOLDER_NAME, subDir.getName());
     }
 
     @Test
-    public void isDirectory() {
+    void isDirectory() {
         assertTrue(root.isDirectory());
         assertTrue(subDir.isDirectory());
         assertFalse(temp.isDirectory());
@@ -125,7 +126,7 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void isFile() {
+    void isFile() {
         assertTrue(temp.isFile());
         assertTrue(subTemp.isFile());
         assertFalse(missing.isFile());
@@ -134,14 +135,14 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void lastModified() throws IOException {
+    void lastModified() throws IOException {
         assertEquals(0, root.lastModified());
         assertNotEquals(0, subTemp.lastModified());
         assertEquals(0, missing.lastModified());
     }
 
     @Test
-    public void length() throws IOException {
+    void length() throws IOException {
         assertEquals(0, missing.length());
         assertEquals(0, root.length());
         assertEquals(0, subDir.length());
@@ -150,32 +151,23 @@ public class AzureBlobVirtualFileIT extends IntegrationTest {
     }
 
     @Test
-    public void list() {
+    void list() {
         VirtualFile[] list = root.list();
         assertArrayEquals(new AzureBlobVirtualFile[]{temp, subDir}, list);
         assertArrayEquals(new AzureBlobVirtualFile[0], missing.list());
     }
 
     @Test
-    public void open() throws IOException {
-        try (InputStream ignored = subDir.open()) {
-            fail("Cannot open a dir");
-        } catch (FileNotFoundException e) {
-            // expected
-        }
-        try (InputStream ignored = missing.open()) {
-            fail("Cannot open a missing file");
-        } catch (FileNotFoundException e) {
-            // expected
-        }
+    void open() throws IOException {
+        assertThrows(FileNotFoundException.class, () -> subDir.open());
+        assertThrows(FileNotFoundException.class, () -> missing.open());
         try (InputStream is = temp.open()) {
             assertEquals(TEMP_FILE_CONTENT, IOUtils.toString(is, StandardCharsets.UTF_8));
         }
     }
 
-
-    @After
-    public void cleanUp() {
+    @AfterEach
+    void afterEach() {
         try {
             FileUtils.deleteDirectory(workspaceDir);
             if (testEnv.container.exists()) {
