@@ -22,9 +22,9 @@ import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.workflow.ArtifactManagerTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,12 +33,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ArtifactManagerIT extends IntegrationTest {
+class ArtifactManagerIT extends IntegrationTest {
+
     private AzureArtifactConfig config;
     private Run run;
     private Launcher mockLauncher;
@@ -51,11 +51,10 @@ public class ArtifactManagerIT extends IntegrationTest {
     private static final Integer BUILD_NUMBER = 1;
     private static final String STASH_NAME = "stash";
 
-
-    @Before
-    public void setUp() throws IOException, ExecutionException, InterruptedException {
+    @BeforeEach
+    void beforeEach() throws Exception {
         config = new AzureArtifactConfig("storage");
-        String containerName = "testartifacts" + TestEnvironment.GenerateRandomString(15);
+        String containerName = "testartifacts" + TestEnvironment.generateRandomString(15);
         config.setContainer(containerName);
         config.setPrefix(PREFIX);
         AzureArtifactManagerFactory artifactManager = new AzureArtifactManagerFactory(config);
@@ -100,8 +99,8 @@ public class ArtifactManagerIT extends IntegrationTest {
         }
     }
 
-    @After
-    public void cleanUp() {
+    @AfterEach
+    void afterEach() {
         try {
             workspace.deleteRecursive();
             if (testEnv.container.exists()) {
@@ -113,7 +112,7 @@ public class ArtifactManagerIT extends IntegrationTest {
     }
 
     @Test
-    public void testStash() throws IOException, InterruptedException {
+    void testStash() throws IOException, InterruptedException {
         AzureArtifactManager artifactManager = new AzureArtifactManager(run, config);
 
         ByteArrayOutputStream listener = new ByteArrayOutputStream();
@@ -135,7 +134,7 @@ public class ArtifactManagerIT extends IntegrationTest {
     }
 
     @Test
-    public void testArchive() throws IOException, InterruptedException {
+    void testArchive() throws IOException, InterruptedException {
         Map<String, String> artifacts = new HashMap<>();
         for (File file : testEnv.uploadFileList.values()) {
             artifacts.put(file.getName(), file.getName());
@@ -161,11 +160,10 @@ public class ArtifactManagerIT extends IntegrationTest {
                 assertEquals(CHILD + downloadedContent + FILE_EXTENSION, temp.getName());
             }
         }
-
     }
 
     @Test
-    public void artifactStash() throws Throwable {
+    void artifactStash() throws Throwable {
         ArtifactManagerTest.artifactStashAndDelete(j, getArtifactManagerFactory(), true);
     }
 
