@@ -138,7 +138,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
         List<UploadObject> objects = new ArrayList<>();
 
         Map<String, String> contentTypes = workspace
-                .act(new ContentTypeGuesser(new ArrayList<>(artifacts.keySet()), listener));
+                .act(new ContentTypeGuesser(new ArrayList<>(artifacts.values()), listener));
 
         try {
             BlobContainerClient container = Utils.getBlobContainerReference(
@@ -147,7 +147,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                     true
             );
 
-            for (Map.Entry<String, String> entry : contentTypes.entrySet()) {
+            for (Map.Entry<String, String> entry : artifacts.entrySet()) {
                 String path = "artifacts/" + entry.getKey();
                 String blobPath = getBlobPath(path);
 
@@ -155,7 +155,9 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
                 String sas = generateSas(blobClient);
                 String blobUrl = blobClient.getBlobUrl() + "?" + sas;
 
-                UploadObject uploadObject = new UploadObject(entry.getKey(), blobUrl, entry.getValue());
+                UploadObject uploadObject = new UploadObject(
+                        entry.getValue(), blobUrl, contentTypes.get(entry.getValue()
+                ));
                 objects.add(uploadObject);
             }
 
