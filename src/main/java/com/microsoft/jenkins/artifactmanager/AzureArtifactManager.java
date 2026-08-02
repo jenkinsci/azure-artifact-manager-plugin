@@ -49,7 +49,6 @@ import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.ArtifactManager;
 import jenkins.model.Jenkins;
 import jenkins.util.VirtualFile;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -405,7 +404,7 @@ public final class AzureArtifactManager extends ArtifactManager implements Stash
     private BlobContainerClient getContainer() throws IOException,
             InterruptedException {
         StorageAccountInfo accountInfo = Utils.getStorageAccount(build.getParent());
-        if (StringUtils.isEmpty(this.actualContainerName)) {
+        if (this.actualContainerName == null || this.actualContainerName.isEmpty()) {
             this.actualContainerName = getActualContainerName(new LogTaskListener(LOGGER, Level.INFO));
         }
 
