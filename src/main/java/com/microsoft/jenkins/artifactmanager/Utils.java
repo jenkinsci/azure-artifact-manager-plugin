@@ -23,7 +23,6 @@ import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
-import org.apache.commons.lang.StringUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -59,7 +58,7 @@ public final class Utils {
     }
 
     public static boolean isPrefixValid(String prefix) {
-        if (StringUtils.isEmpty(prefix)) {
+        if (prefix == null || prefix.isEmpty()) {
             return true;
         }
 
@@ -67,7 +66,7 @@ public final class Utils {
     }
 
     public static boolean containTokens(String text) {
-        if (StringUtils.isBlank(text)) {
+        if (text == null || text.isBlank()) {
             return false;
         }
         return text.matches(Constants.TOKEN_FORMAT);
@@ -103,7 +102,7 @@ public final class Utils {
 
         // Check if CDN endpoint exists and use CDN URL, otherwise use blob URL
         String cdnEndpoint = storageAccount.getCdnEndPointURL();
-        if (!StringUtils.isBlank(cdnEndpoint)) {
+        if (cdnEndpoint != null && !cdnEndpoint.isBlank()) {
             return (cdnEndpoint + "/" + blob.getContainerName() + "/" + blob.getBlobName());
         } else {
             return blob.getBlobUrl();
