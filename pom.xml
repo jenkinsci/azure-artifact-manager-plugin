@@ -16,7 +16,7 @@
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.504</jenkins.baseline>
+        <jenkins.baseline>2.555</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
         <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
@@ -34,7 +34,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>5506.va_222b_131ec34</version>
+                <version>6931.vea_a_b_c6fd017d</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -45,6 +45,16 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
+        </dependency>
+        <!-- windows-azure-storage brings an old tika-core whose jakarta APIs would otherwise
+             win over the newer ones from azure-sdk; declare them so the newer versions resolve -->
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>jakarta-activation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>jakarta-xml-bind-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
